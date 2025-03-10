@@ -1,108 +1,56 @@
 #!/bin/bash
 
-# Set up Firebase Authentication in Next.js
+echo "🚀 Fixing Jest Test Errors for ES Modules..."
 
-echo "🔥 Setting up Firebase Authentication in your Next.js project..."
+# Step 1: Fix Server Export in index.js
+INDEX_FILE="backend/api/index.js"
 
-# Navigate to frontend directory
-cd frontend || { echo "❌ Error: frontend directory not found"; exit 1; }
+if ! grep -q "export default server" "$INDEX_FILE"; then
+  echo "🔧 Updating $INDEX_FILE to return an HTTP server..."
+  sed -i '' 's|const app = express();|import http from "http";\nconst app = express();\nconst server = http.createServer(app);|' "$INDEX_FILE"
+  sed -i '' 's|app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));|if (process.env.NODE_ENV !== "test") {\n  server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));\n}|' "$INDEX_FILE"
+  echo "export default server;" >> "$INDEX_FILE"
+fi
 
-# Install Firebase dependencies
-echo "📦 Installing Firebase dependencies..."
-npm install firebase react-firebase-hooks
+# Step 2: Fix MongoDB Connection Logging
+DB_FILE="backend/api/config/db.js"
+if ! grep -q "if (process.env.NODE_ENV !== 'test')" "$DB_FILE"; then
+  echo "🔧 Suppressing MongoDB logs during tests..."
+  sed -i '' 's|console.log(`✅ MongoDB Connected: \${conn.connection.host}`);|if (process.env.NODE_ENV !== "test") console.log(`✅ MongoDB Connected: \${conn.connection.host}`);|' "$DB_FILE"
+fi
 
-# Create src directory if not exists
-mkdir -p src
+# Step 3: Ensure MongoDB Closes After Tests
+TEST_SETUP="backend/api/tests/setup.js"
+echo "🔧 Ensuring MongoDB disconnects after tests..."
+cat <<EOL > "$TEST_SETUP"
+import mongoose from 'mongoose';
+afterAll(async () => {
+  await mongoose.connection.close();
+});
+EOL
 
-# Create Firebase config file
-echo "📝 Creating Firebase configuration..."
-cat <<EOF > src/firebaseConfig.ts
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
-
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
+# Step 4: Update Jest Config
+JEST_CONFIG="jest.config.js"
+if [ ! -f "$JEST_CONFIG" ]; then
+  echo "🔧 Creating Jest config to enable ESM support..."
+  cat <<EOL > "$JEST_CONFIG"
+export default {
+  preset: 'jest-puppeteer',
+  testEnvironment: 'node',
+  transform: {},
+  extensionsToTreatAsEsm: ['.js'],
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
+  setupFilesAfterEnv: ['<rootDir>/backend/api/tests/setup.js']
 };
+EOL
+fi
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-const githubProvider = new GithubAuthProvider();
+# Step 5: Run Tests
+echo "🛠 Running Jest Tests with ES Modules support..."
+NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules" npm test
 
-export { auth, googleProvider, githubProvider };
-EOF
-
-# Create Authentication functions
-echo "📝 Adding authentication logic..."
-cat <<EOF > src/auth.ts
-import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider, githubProvider } from "./firebaseConfig";
-
-export const signInWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    console.log("User signed in:", result.user);
-  } catch (error) {
-    console.error("Google sign-in error:", error);
-  }
-};
-
-export const signInWithGithub = async () => {
-  try {
-    const result = await signInWithPopup(auth, githubProvider);
-    console.log("User signed in:", result.user);
-  } catch (error) {
-    console.error("GitHub sign-in error:", error);
-  }
-};
-
-export const logout = async () => {
-  try {
-    await signOut(auth);
-    console.log("User signed out");
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
-EOF
-
-# Update Home Page to Include Sign-in Buttons
-echo "📝 Updating home page..."
-mkdir -p app
-cat <<EOF > app/page.tsx
-"use client";
-import { signInWithGoogle, signInWithGithub, logout } from "../src/auth";
-
-export default function Home() {
-  return (
-    <div>
-      <h1>Welcome to BabyBloom</h1>
-      <button onClick={signInWithGoogle}>Sign in with Google</button>
-      <button onClick={signInWithGithub}>Sign in with GitHub</button>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
-}
-EOF
-
-# Ensure .env.local Exists
-echo "📝 Setting up .env.local file..."
-cat <<EOF > .env.local
-FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
-FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
-FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
-FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
-FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
-FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
-EOF
-
-echo "⚠️ IMPORTANT: Edit .env.local and replace placeholders with your Firebase credentials!"
-
-# Restart the app
-echo "🚀 Setup complete! Restarting the app..."
-npm run dev
+echo "✅ Jest ES Module Fix Applied Successfully!"
