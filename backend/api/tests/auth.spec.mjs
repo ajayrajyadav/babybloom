@@ -1,5 +1,6 @@
-import { app } from '../index.js';
+import { app, server } from '../index.js';
 import request from 'supertest';
+import mongoose from 'mongoose'; // ✅ Fix: Import mongoose
 
 describe('Auth API Tests', () => {
   it('should return 400 if credentials are missing', async () => {
@@ -9,7 +10,7 @@ describe('Auth API Tests', () => {
 
   it('should return 201 for successful user registration', async () => {
     const res = await request(app).post('/api/auth/register').send({
-      email: 'test@example.com',
+      email: `test${Date.now()}@example.com`, // Unique email to avoid conflicts
       password: 'password123'
     });
     expect(res.statusCode).toEqual(201);
@@ -17,7 +18,9 @@ describe('Auth API Tests', () => {
 });
 
 // ✅ Close server after all tests
-afterAll((done) => {
-  if (server?.close) server.close();
-  done();
+afterAll(async () => {
+  await mongoose.connection.db.collection('users').deleteMany({ email: /test.*@example.com/ });
+  if (server && server.close) {
+    server.close();
+  }
 });
