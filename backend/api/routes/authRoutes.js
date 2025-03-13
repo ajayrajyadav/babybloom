@@ -1,12 +1,16 @@
 import express from "express";
-import { register, login, logout, getProfile } from "../controllers/authController.js";
+import { login, registerUser, refreshToken } from "../controllers/authController.js";
+import { authorizeRole } from "../middleware/roleMiddleware.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/register", register);
+router.post("/register", registerUser);
 router.post("/login", login);
-router.post("/logout", protect, logout);  // 🔐 Protect the logout endpoint
-router.get("/profile", protect, getProfile);
+router.post("/refresh-token", refreshToken);
+
+router.get("/admin", protect, authorizeRole("admin"), (req, res) => {
+    res.json({ message: "Welcome Admin!" });
+});
 
 export default router;
