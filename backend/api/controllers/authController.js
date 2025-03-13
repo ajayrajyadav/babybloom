@@ -1,71 +1,88 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js'; // Ensure this path is correct
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
+import RefreshToken from "../models/refreshTokenModel.js";
 
-// Register Controller
-export async function register(req, res) {
+const generateAccessToken = (user) => {
+    return jwt.sign(
+        { userId: user._id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_ACCESS_EXPIRATION || "15m" }
+    );
+};
+
+const generateRefreshToken = (user) => {
+    return jwt.sign(
+        { userId: user._id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: process.env.JWT_REFRESH_EXPIRATION || "7d" }
+    );
+};
+
+// ✅ Register User
+export const registerUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
-        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: "User already exists" });
         }
 
-        // Hash the password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            email,
+            password: hashedPassword,
+            role: role || "user",
+        });
 
-        // Create new user
-        const newUser = new User({ email, password: hashedPassword });
         await newUser.save();
-
-        return res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
-        return res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-}
-export const logout = async (req, res) => {
-  return res.status(200).json({ message: "Logout successful" });
 };
-//get profile controller
-export const getProfile = async (req, res) => {
-  try {
-      if (!req.user) {
-          return res.status(401).json({ message: "Not authorized" });
-      }
-      return res.status(200).json({ 
-          message: `Welcome, user ${req.user.userId}!`, 
-          user: req.user 
-      });
-  } catch (error) {
-      console.error("❌ Error in getProfile:", error);
-      res.status(500).json({ message: "Server error" });
-  }
-};
-// Login Controller
-export async function login(req, res) {
+
+// ✅ Login User & Generate Tokens
+export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Check if user exists
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Compare password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Generate JWT Token
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
 
-        return res.status(200).json({ token, message: 'Login successful' });
+        res.json({ accessToken, refreshToken, message: "Login successful" });
     } catch (error) {
-        return res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
-}
+};
+
+// ✅ Refresh Token Endpoint
+export const refreshToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(401).json({ message: "Refresh token required" });
+
+        jwt.verify(token, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+            if (err) return res.status(403).json({ message: "Invalid refresh token" });
+
+            const user = await User.findById(decoded.userId);
+            if (!user) return res.status(401).json({ message: "User not found" });
+
+            const newAccessToken = generateAccessToken(user);
+            res.json({ accessToken: newAccessToken });
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
