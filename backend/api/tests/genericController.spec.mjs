@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { app, server } from '../index.js';
+import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
 describe('CRUD API Tests', () => {
     it('should retrieve all resources', async () => {

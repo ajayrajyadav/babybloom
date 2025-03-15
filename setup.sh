@@ -25,7 +25,7 @@ EOL
 # ✅ Update roleMiddleware.js for Role-Based Access Control
 echo "🛡️ Updating roleMiddleware.js..."
 cat > "$BASE_DIR/middleware/roleMiddleware.js" <<EOL
-export const authorizeRole = (requiredRole) => {
+export const authorizeRoles = (requiredRole) => {
   return (req, res, next) => {
     if (!req.user || req.user.role !== requiredRole) {
       return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
@@ -74,7 +74,7 @@ echo "🛠️ Updating authRoutes.js..."
 cat > "$BASE_DIR/routes/authRoutes.js" <<EOL
 import express from 'express';
 import { login, refreshToken } from '../controllers/authController.js';
-import { authorizeRole } from '../middleware/roleMiddleware.js';
+import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();

@@ -1,9 +1,19 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
+
 
 const refreshTokenSchema = new mongoose.Schema({
-    token: { type: String, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }, // 7 days expiry
+    token: { type: String, required: true }, // This will be encrypted
+    expiresAt: { type: Date, required: true },
 });
 
-export default mongoose.model("RefreshToken", refreshTokenSchema);
+// Encrypt token before saving
+//refreshTokenSchema.pre("save", function (next) {
+//    this.token = crypto.createHash("sha256").update(this.token).digest("hex");
+//    next();
+//});
+
+const RefreshToken = mongoose.model("RefreshToken", refreshTokenSchema, "refreshTokens");
+
+export default RefreshToken;
