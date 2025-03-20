@@ -13,5 +13,11 @@ exports.getProfile = async (req, res) => {
 };
 
 exports.getAdminData = async (req, res) => {
-    res.json({ message: "Admin access granted" });
+    try {
+        console.log("✅ Admin data request received");
+        res.status(200).json({ message: "Admin data retrieved successfully" });
+    } catch (error) {
+        console.error("❌ Error fetching admin data:", error);
+        res.status(500).json({ message: "Server error" });
+    }
 };

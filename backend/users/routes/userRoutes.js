@@ -1,14 +1,18 @@
 const express = require('express');
-const { getProfile, getAdminData } = require('../controllers/userController'); // ✅ Ensure correct imports
+const { getProfile, getAdminData } = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
-const adminMiddleware = require('../middleware/adminMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
-// Protected route: Get user profile (Requires authentication)
 router.get('/profile', authMiddleware, getProfile);
 
-// Admin-only route
-router.get('/admin', authMiddleware, adminMiddleware, getAdminData);
+router.get('/admin', authMiddleware, (req, res, next) => {
+    console.log("🔍 Checking role middleware for /users/admin");
+    roleMiddleware(req, res, next, 'admin');
+}, (req, res) => {
+    console.log("✅ Passed role check, calling getAdminData");
+    getAdminData(req, res);
+});
 
 module.exports = router;
