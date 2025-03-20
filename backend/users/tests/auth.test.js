@@ -9,7 +9,7 @@ let adminCookies;
 
 beforeAll(async () => {
     await mongoose.connection.db.dropDatabase();
-    agent = request.agent(app);
+    agent = request.agent("http://localhost:8080/api");
 });
 
 afterAll(async () => {
