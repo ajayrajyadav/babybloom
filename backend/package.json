@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Backend integration testing for all microservices",
     "scripts": {
-      "test:integration": "jest tests/integration --detectOpenHandles --forceExit"
+      "test:integration": "jest tests/integration --detectOpenHandles --forceExit --outputFile=test-results/results.json --json"
     },
     "devDependencies": {
       "jest": "^29.7.0",

@@ -46,7 +46,7 @@ jobs:
 
       - name: 📄 Archive test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3@8fa96c8a01e4b22cbe3f2b7c8399f97e3aaace13 # commit SHA
         with:
           name: integration-test-results
           path: backend/test-results/
