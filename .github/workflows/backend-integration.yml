@@ -1,52 +1,30 @@
 name: ✨ Backend CI (Integration Tests)
 
 on:
-  pull_request:
-    branches: [main, develop, feature/**]
   push:
-    branches: [main, develop, feature/**]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  integration-tests:
-    name: 🚀 Run Integration Tests
+  build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-
-    services:
-      mongo:
-        image: mongo:6.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
-      - name: 📂 Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: 💾 Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22
+          node-version: '16'
 
-      - name: 📁 Install deps in root
+      - name: Install dependencies
+        working-directory: ./backend
         run: npm install
 
-      - name: 📁 Install backend deps
-        working-directory: backend
-        run: npm install
-
-      - name: 🌐 Run Integration Tests
+      - name: Run integration tests
+        working-directory: ./backend
         run: npm run test:integration
-
-      - name: 📄 Archive test results
-        if: always()
-        uses: actions/upload-artifact@v3@8fa96c8a01e4b22cbe3f2b7c8399f97e3aaace13 # commit SHA
-        with:
-          name: integration-test-results
-          path: backend/test-results/
