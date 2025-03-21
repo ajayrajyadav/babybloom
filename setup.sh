@@ -1,91 +1,154 @@
 #!/bin/bash
 
-echo "🚀 Setting up RBAC and Token Refresh..."
+# Navigate to the backend directory
+cd ~/code/babybloom/babybloom/backend || exit
 
-BASE_DIR="$(pwd)/backend/api"
+# Create baby service directory
+mkdir -p babies/{models,routes,controllers,tests}
+cd babies || exit
 
-# ✅ Update userModel.js to include role field
-echo "📝 Updating userModel.js..."
-cat > "$BASE_DIR/models/userModel.js" <<EOL
-import mongoose from 'mongoose';
+# Initialize Node.js project
+echo "Initializing Node.js project..."
+npm init -y
 
-const userSchema = new mongoose.Schema(
-  {
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' }, // ✅ Role field added
-  },
-  { timestamps: true }
-);
+# Install dependencies
+echo "Installing dependencies..."
+npm install express mongoose dotenv cors body-parser
+npm install --save-dev jest supertest
 
-const User = mongoose.model('User', userSchema);
-export default User;
+# Create .env file
+echo "Creating .env file..."
+cat <<EOL > .env
+PORT=5002
+MONGO_URI=mongodb://admin:password@localhost:27017/babybloom?authSource=admin
 EOL
 
-# ✅ Update roleMiddleware.js for Role-Based Access Control
-echo "🛡️ Updating roleMiddleware.js..."
-cat > "$BASE_DIR/middleware/roleMiddleware.js" <<EOL
-export const authorizeRoles = (requiredRole) => {
-  return (req, res, next) => {
-    if (!req.user || req.user.role !== requiredRole) {
-      return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
-    }
-    next();
-  };
-};
+# Create index.js
+echo "Creating index.js..."
+cat <<EOL > index.js
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const babyRoutes = require('./routes/babyRoutes');
+
+const app = express();
+const PORT = process.env.PORT || 5002;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// Routes
+app.use('/api/babies', babyRoutes);
+
+// Database Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB Connected (Baby Service)'))
+.catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+app.listen(PORT, () => {
+  console.log(`🚀 Baby Service running on port ${PORT}`);
+});
 EOL
 
-# ✅ Update authController.js to include refresh token logic
-echo "🔄 Updating authController.js with Token Refresh..."
-cat > "$BASE_DIR/controllers/authController.js" <<EOL
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import User from '../models/userModel.js';
+# Create Baby model
+echo "Creating models/Baby.js..."
+cat <<EOL > models/Baby.js
+const mongoose = require('mongoose');
 
-const generateToken = (userId, role) => {
-  return jwt.sign({ userId, role }, process.env.JWT_SECRET, { expiresIn: '15m' });
-};
-
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-
-  if (user && (await bcrypt.compare(password, user.password))) {
-    const token = generateToken(user._id, user.role);
-    return res.json({ token, message: 'Login successful' });
-  }
-  res.status(401).json({ message: 'Invalid credentials' });
-};
-
-export const refreshToken = async (req, res) => {
-  const { token } = req.body;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const newToken = generateToken(decoded.userId, decoded.role);
-    return res.json({ token: newToken });
-  } catch (error) {
-    return res.status(401).json({ message: 'Token expired or invalid' });
-  }
-};
-EOL
-
-# ✅ Update authRoutes.js to add refresh-token route
-echo "🛠️ Updating authRoutes.js..."
-cat > "$BASE_DIR/routes/authRoutes.js" <<EOL
-import express from 'express';
-import { login, refreshToken } from '../controllers/authController.js';
-import { authorizeRoles } from '../middleware/roleMiddleware.js';
-import { protect } from '../middleware/authMiddleware.js';
-
-const router = express.Router();
-
-router.post('/login', login);
-router.post('/refresh-token', refreshToken);
-router.get('/admin', protect, authorizeRole('admin'), (req, res) => {
-  res.json({ message: 'Welcome Admin!' });
+const BabySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  name: { type: String, required: true },
+  birthdate: { type: Date, required: true },
+  gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
-export default router;
+module.exports = mongoose.model('Baby', BabySchema);
 EOL
 
-echo "✅ RBAC & Token Refresh Setup Completed! 🚀"
+# Create Baby routes
+echo "Creating routes/babyRoutes.js..."
+cat <<EOL > routes/babyRoutes.js
+const express = require('express');
+const router = express.Router();
+const Baby = require('../models/Baby');
+
+// Create a baby profile
+router.post('/', async (req, res) => {
+  try {
+    const newBaby = new Baby({ ...req.body, userId: req.body.userId });
+    const savedBaby = await newBaby.save();
+    res.status(201).json(savedBaby);
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating baby profile' });
+  }
+});
+
+// Get all babies for the logged-in user
+router.get('/', async (req, res) => {
+  try {
+    const babies = await Baby.find({ userId: req.query.userId });
+    res.status(200).json(babies);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching baby profiles' });
+  }
+});
+
+// Get a specific baby profile
+router.get('/:id', async (req, res) => {
+  try {
+    const baby = await Baby.findById(req.params.id);
+    if (!baby) return res.status(404).json({ error: 'Baby not found' });
+    res.status(200).json(baby);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching baby profile' });
+  }
+});
+
+// Update a baby profile
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedBaby = await Baby.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.status(200).json(updatedBaby);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating baby profile' });
+  }
+});
+
+// Delete a baby profile
+router.delete('/:id', async (req, res) => {
+  try {
+    await Baby.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Baby profile deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting baby profile' });
+  }
+});
+
+module.exports = router;
+EOL
+
+# Create basic test file
+echo "Creating tests/baby.test.js..."
+cat <<EOL > tests/baby.test.js
+const request = require('supertest');
+const app = require('../index');
+
+describe('Baby Service API Tests', () => {
+  it('should create a new baby profile', async () => {
+    const res = await request(app)
+      .post('/api/babies/')
+      .send({ name: 'Baby Test', birthdate: '2023-01-01', gender: 'Male', userId: '123456789' });
+    expect(res.status).toBe(201);
+  });
+});
+EOL
+
+# Success message
+echo "✅ Baby Service setup completed! Run 'npm start' inside the 'babies' directory to start the service."
