@@ -1,0 +1,15 @@
+{
+    "name": "babybloom-backend",
+    "version": "1.0.0",
+    "description": "Backend integration testing for all microservices",
+    "scripts": {
+      "test:integration": "jest tests/integration --detectOpenHandles --forceExit"
+    },
+    "devDependencies": {
+      "jest": "^29.7.0",
+      "supertest": "^6.3.3"
+    },
+    "jest": {
+      "testEnvironment": "node"
+    }
+  }

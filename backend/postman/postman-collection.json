@@ -1,0 +1,128 @@
+{
+    "info": {
+      "name": "Babybloom API Collection",
+      "_postman_id": "d5c6b8a2-1234-4a8c-9876-abcdef123456",
+      "description": "Postman collection for testing Babybloom Users and Babies APIs",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Register User",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/api/users/register",
+            "host": [
+              "localhost:8080"
+            ],
+            "path": [
+              "api",
+              "users",
+              "register"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Login User",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/api/users/login",
+            "host": [
+              "localhost:8080"
+            ],
+            "path": [
+              "api",
+              "users",
+              "login"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Create Baby Profile",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"name\": \"Test Baby\",\n  \"birthdate\": \"2023-01-01\",\n  \"gender\": \"Male\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8080/api/babies/",
+            "host": [
+              "localhost:8080"
+            ],
+            "path": [
+              "api",
+              "babies",
+              ""
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get All Babies",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/api/babies/",
+            "host": [
+              "localhost:8080"
+            ],
+            "path": [
+              "api",
+              "babies",
+              ""
+            ]
+          }
+        }
+      },
+      {
+        "name": "Logout User",
+        "request": {
+          "method": "POST",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:8080/api/users/logout",
+            "host": [
+              "localhost:8080"
+            ],
+            "path": [
+              "api",
+              "users",
+              "logout"
+            ]
+          }
+        }
+      }
+    ]
+  }
+  
