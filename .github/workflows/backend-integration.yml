@@ -9,11 +9,22 @@ on:
       - main
 
 jobs:
-  build:
+  integration-tests:
     runs-on: ubuntu-latest
 
+    services:
+      api-gateway:
+        image: nginx:latest
+        ports:
+          - 8080:8080
+        options: >-
+          --health-cmd="curl -f http://localhost:8080 || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Node.js
@@ -24,6 +35,12 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: npm install
+
+      - name: Wait for API Gateway to be ready
+        run: |
+          echo "Waiting for API Gateway to be ready..."
+          sleep 10
+          curl -f http://localhost:8080 || (echo "API Gateway is not up" && exit 1)
 
       - name: Run integration tests
         working-directory: ./backend
