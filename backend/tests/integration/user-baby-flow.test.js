@@ -1,15 +1,12 @@
-#!/bin/bash
-echo "📂 Creating integration test directory..."
-mkdir -p backend/babies/tests/integration
-
-echo "📝 Writing integration test file..."
-cat << 'EOF' > backend/babies/tests/integration/user-baby-flow.test.js
 const request = require('supertest');
 const path = require('path');
 const fs = require('fs');
 
+// Base URL for API Gateway
 const api = request('http://localhost:8080');
-const cookiesPath = path.join(__dirname, '../cookies.integration.txt');
+
+// New path for cookie storage relative to backend/tests/integration/
+const cookiesPath = path.join(__dirname, '../../cookies.integration.txt');
 
 describe('🌐 Integration: User & Baby Service via API Gateway', () => {
   let babyId;
@@ -90,7 +87,3 @@ describe('🌐 Integration: User & Baby Service via API Gateway', () => {
     }
   });
 });
-
-EOF
-
-echo "✅ Integration test created at backend/babies/tests/integration/user-baby-flow.test.js"
