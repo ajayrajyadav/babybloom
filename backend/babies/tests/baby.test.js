@@ -109,7 +109,7 @@ describe('👶 Baby Service Tests via Gateway', () => {
       .send({ name: 'Unauthorized Baby', birthdate: '2023-01-01', gender: 'Male' });
 
     expect(res.statusCode).toBe(401);
-    expect(res.body.message).toMatch(/No token found|Unauthorized/);
+    expect(res.body.message).toMatch(/No token, authorization denied/);
   });
 
   test('🗑️ Delete baby profile', async () => {

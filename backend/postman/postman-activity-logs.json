@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "Babybloom Activity Logs API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Sleep Log",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"type\": \"sleep\", \"startTime\": \"2025-03-24T20:00:00.000Z\"}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/activity-logs/sleep",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "activity-logs",
+            "sleep"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Sleep Log",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"endTime\": \"2025-03-24T22:00:00.000Z\"}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/activity-logs/sleep/:id",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "activity-logs",
+            "sleep",
+            ":id"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Sleep Logs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/activity-logs/sleep",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "activity-logs",
+            "sleep"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete Sleep Log",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/api/activity-logs/sleep/:id",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "api",
+            "activity-logs",
+            "sleep",
+            ":id"
+          ]
+        }
+      }
+    }
+  ]
+}
