@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const DiaperLogSchema = new mongoose.Schema(
+const diaperLogSchema = new mongoose.Schema(
   {
     babyId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,7 +10,6 @@ const DiaperLogSchema = new mongoose.Schema(
     type: {
       type: String,
       default: "diaper",
-      enum: ["diaper"],
     },
     time: {
       type: Date,
@@ -18,7 +17,8 @@ const DiaperLogSchema = new mongoose.Schema(
     },
     contents: {
       type: String,
-      enum: ["pee", "poop", "both"],
+      enum: ["wet", "BM", "both"],
+      required: true,
     },
     color: {
       type: String,
@@ -28,11 +28,12 @@ const DiaperLogSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "completed"],
       default: "completed",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("DiaperLog", DiaperLogSchema);
+const DiaperLog = mongoose.model("DiaperLog", diaperLogSchema);
+
+module.exports = DiaperLog;

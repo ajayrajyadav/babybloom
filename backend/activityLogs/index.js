@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const cookieParser = require('cookie-parser'); // Add this line
 const cors = require('cors');
+
 const mongoose = require('mongoose');
 
 // Database connection
@@ -22,6 +23,8 @@ const feedingRoutes = require('./routes/feedingRoutes');
 app.use('/api/activity/feeding', feedingRoutes);
 const diaperRoutes = require('./routes/diaperRoutes');
 app.use('/api/activity/diaper', diaperRoutes);
+const activitySummaryRoutes = require('./routes/activitySummaryRoutes');
+app.use('/api/activity', activitySummaryRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
