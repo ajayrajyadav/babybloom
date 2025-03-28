@@ -1,0 +1,181 @@
+/Users/ajayyadav/code/babybloom/babybloom
+├── README.md
+├── api-gateway
+│   ├── cookies.txt
+│   ├── dir-structure.txt
+│   ├── nginx.conf
+│   ├── nginx.conf.template
+│   └── start-nginx.sh
+├── backend
+│   ├── activity-logs
+│   │   ├── controllers
+│   │   │   └── activityController.js
+│   │   ├── index.js
+│   │   ├── middleware
+│   │   │   └── authMiddleware.js
+│   │   ├── models
+│   │   │   └── ActivityLog.js
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── routes
+│   │   │   ├── activityRoutes.js
+│   │   │   ├── diaperRoutes.js
+│   │   │   ├── feedingRoutes.js
+│   │   │   ├── index.js
+│   │   │   └── sleepRoutes.js
+│   │   └── tests
+│   ├── api
+│   │   ├── activity-logs
+│   │   ├── config
+│   │   │   ├── config.js
+│   │   │   └── db.js
+│   │   ├── controllers
+│   │   │   ├── authController.js
+│   │   │   ├── babyController.js
+│   │   │   ├── diaperController.js
+│   │   │   ├── feedingController.js
+│   │   │   ├── genericController.js
+│   │   │   ├── growthController.js
+│   │   │   ├── index.js
+│   │   │   ├── refreshToken.js
+│   │   │   ├── sampleController.js
+│   │   │   └── sleepController.js
+│   │   ├── index.js
+│   │   ├── middleware
+│   │   │   ├── authMiddleware.js
+│   │   │   ├── errorMiddleware.js
+│   │   │   ├── index.js
+│   │   │   └── roleMiddleware.js
+│   │   ├── models
+│   │   │   ├── ActivityLog.js
+│   │   │   ├── BabyProfile.js
+│   │   │   ├── GrowthMetrics.js
+│   │   │   ├── User.js
+│   │   │   ├── index.js
+│   │   │   ├── refreshTokenModel.js
+│   │   │   ├── sampleModel.js
+│   │   │   └── userModel.js
+│   │   ├── resources
+│   │   ├── routes
+│   │   │   ├── adminRoutes.js
+│   │   │   ├── authRoutes.js
+│   │   │   ├── babyRoutes.js
+│   │   │   ├── diaperRoutes.js
+│   │   │   ├── feedingRoutes.js
+│   │   │   ├── genericRoutes.js
+│   │   │   ├── growthRoutes.js
+│   │   │   ├── index.js
+│   │   │   ├── sampleRoute.js
+│   │   │   └── sleepRoutes.js
+│   │   ├── tests
+│   │   │   ├── auth.spec.mjs
+│   │   │   ├── genericController.spec.mjs
+│   │   │   ├── logout.spec.mjs
+│   │   │   ├── refreshToken.spec.mjs
+│   │   │   └── setup.js
+│   │   └── utils
+│   │       └── helpers.js
+│   ├── babies
+│   │   ├── controllers
+│   │   ├── cookies.txt
+│   │   ├── dir-structure-babies.txt
+│   │   ├── index.js
+│   │   ├── jest.config.js
+│   │   ├── middleware
+│   │   │   └── authMiddleware.js
+│   │   ├── models
+│   │   │   └── Baby.js
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── routes
+│   │   │   └── babyRoutes.js
+│   │   └── tests
+│   │       ├── baby.test.js
+│   │       └── setup.js
+│   ├── common
+│   │   └── authMiddleware.js
+│   ├── gateway
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postman
+│   │   ├── babybloom-enviornment.json
+│   │   ├── postman-activity-logs.json
+│   │   └── postman-collection.json
+│   ├── services
+│   ├── tests
+│   │   └── integration
+│   │       └── user-baby-flow.test.js
+│   └── users
+│       ├── config
+│       │   ├── config.js
+│       │   └── db.js
+│       ├── controllers
+│       │   ├── authController.js
+│       │   └── userController.js
+│       ├── cookies.txt
+│       ├── dir-structure-users.txt
+│       ├── dir-structure.txt
+│       ├── index.js
+│       ├── jest.config.js
+│       ├── middleware
+│       │   ├── authMiddleware.js
+│       │   └── roleMiddleware.js
+│       ├── models
+│       │   ├── refreshTokenModel.js
+│       │   └── userModel.js
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── routes
+│       │   ├── authRoutes.js
+│       │   └── userRoutes.js
+│       ├── tests
+│       │   ├── auth.test.js
+│       │   └── setup.js
+│       └── utils
+├── cicd
+│   ├── docker
+│   ├── github-actions
+│   │   ├── backend-ci.yml
+│   │   └── frontend-ci.yml
+│   └── k8s
+├── cookies.txt
+├── dir-structure.txt
+├── docker-compose.yml
+├── docs
+│   └── api-specs
+├── frontend
+│   ├── Dockerfile
+│   ├── app
+│   │   ├── api
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── protected.tsx
+│   ├── next-env.d.ts
+│   ├── next.config.js
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── pages
+│   │   └── api
+│   │       └── auth
+│   │           └── [...nextauth].ts
+│   ├── public
+│   ├── src
+│   │   ├── auth.ts
+│   │   ├── components
+│   │   ├── firebaseAuth.ts
+│   │   ├── firebaseConfig.ts
+│   │   ├── hooks
+│   │   ├── services
+│   │   ├── styles
+│   │   └── utils
+│   ├── tests
+│   └── tsconfig.json
+├── generateHash.js
+├── hashingTest.js
+├── infra
+│   └── scripts
+├── package-lock.json
+├── package.json
+└── setup.sh
+
+61 directories, 118 files

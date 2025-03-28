@@ -3,7 +3,9 @@
     "version": "1.0.0",
     "description": "Backend integration testing for all microservices",
     "scripts": {
-      "test:integration": "jest tests/integration --detectOpenHandles --forceExit --outputFile=test-results/results.json --json"
+      "pretest": "mkdir -p tests/test-results",
+      "test": "jest",
+      "test:integration": "jest tests/integration --detectOpenHandles --forceExit --outputFile=tests/test-results/results.json --json"
     },
     "devDependencies": {
       "jest": "^29.7.0",
