@@ -20,24 +20,25 @@ This microservice handles all user-related functionality for the Babybloom platf
 <pre>
 <code>
 users/
+users/
 ├── config/
-│   └── db.js
+│   └── db.js                  # MongoDB connection
 ├── controllers/
-│   ├── authController.js
-│   └── userController.js
+│   ├── authController.js      # Signup, login, logout, token refresh
+│   └── userController.js      # Fetch user profile
 ├── middleware/
-│   ├── authMiddleware.js
-│   └── roleMiddleware.js
+│   ├── authMiddleware.js      # JWT + Cookie verification
+│   └── roleMiddleware.js      # Role-based access control
 ├── models/
-│   ├── userModel.js
-│   └── refreshTokenModel.js
+│   ├── userModel.js           # Mongoose schema for users
+│   └── refreshTokenModel.js   # Refresh token persistence
 ├── routes/
-│   ├── authRoutes.js
+│   ├── authRoutes.js          # /api/users/…
 │   └── userRoutes.js
 ├── tests/
-│   ├── auth.test.js
-│   └── setup.js
-├── index.js
+│   ├── auth.test.js           # Auth E2E tests
+│   └── setup.js               # Jest setup with DB reset
+├── index.js                   # Entry point
 └── package.json
 </code>
 </pre>
