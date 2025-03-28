@@ -1,9 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
-const cookieParser = require('cookie-parser'); // Add this line
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
-
 const mongoose = require('mongoose');
 
 // Database connection
@@ -21,8 +20,10 @@ app.use('/api/activity/sleep', sleepRoutes);
 
 const feedingRoutes = require('./routes/feedingRoutes');
 app.use('/api/activity/feeding', feedingRoutes);
+
 const diaperRoutes = require('./routes/diaperRoutes');
 app.use('/api/activity/diaper', diaperRoutes);
+
 const activitySummaryRoutes = require('./routes/activitySummaryRoutes');
 app.use('/api/activity', activitySummaryRoutes);
 
@@ -31,7 +32,12 @@ app.get('/', (req, res) => {
   res.send('Activity Logs microservice is running.');
 });
 
-const PORT = process.env.PORT || 5004;
-app.listen(PORT, () => {
-  console.log(`Activity Logs service running on port ${PORT}`);
-});
+// Only start server if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT || 5004;
+  app.listen(PORT, () => {
+    console.log(`Activity Logs service running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

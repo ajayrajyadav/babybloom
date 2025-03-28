@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest"
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:activity": "jest --setupFilesAfterEnv ./tests/setup.js"
   },
   "author": "",
   "license": "ISC",
