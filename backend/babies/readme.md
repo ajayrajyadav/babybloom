@@ -45,7 +45,7 @@ babies/
 | Method | Endpoint | Description                        | Auth Required |
 |--------|----------|------------------------------------|----------------|
 | POST   | `/`      | Create a baby profile              | ✅ Yes         |
-| GET    | `/`      | Get all babies for logged-in user | ✅ Yes         |
+| GET    | `/`      | Get all babies for logged-in user  | ✅ Yes         |
 | GET    | `/:id`   | Get baby by ID                     | ✅ Yes         |
 | DELETE | `/:id`   | Delete baby by ID                  | ✅ Yes         |
 

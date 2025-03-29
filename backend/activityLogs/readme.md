@@ -11,28 +11,28 @@ Supports partial entries (start only, or start + end), summaries, and dashboard 
 
 ### Sleep (`/api/activity/sleep`)
 
-| Method | Endpoint            | Description                        | Auth Required |
+| Method | Endpoint            | Description                        | Auth Required  |
 |--------|---------------------|------------------------------------|----------------|
 | POST   | `/`                 | Start a sleep log                  | ✅ Yes         |
 | PATCH  | `/:id`              | Complete a sleep log with endTime  | ✅ Yes         |
 
 ### Feeding (`/api/activity/feeding`)
 
-| Method | Endpoint            | Description                          | Auth Required |
+| Method | Endpoint            | Description                          | Auth Required  |
 |--------|---------------------|--------------------------------------|----------------|
 | POST   | `/`                 | Start a feeding log                  | ✅ Yes         |
 | PATCH  | `/:id`              | Complete feeding log with endTime    | ✅ Yes         |
 
 ### Diaper (`/api/activity/diaper`)
 
-| Method | Endpoint            | Description                          | Auth Required |
+| Method | Endpoint            | Description                          | Auth Required  |
 |--------|---------------------|--------------------------------------|----------------|
 | POST   | `/`                 | Log a diaper change                  | ✅ Yes         |
 
 ### Summary & Dashboard
 
 | Method | Endpoint                          | Description                      | Auth Required |
-|--------|-----------------------------------|----------------------------------|----------------|
+|--------|-----------------------------------|----------------------------------|---------------|
 | GET    | `/summary/:babyId`               | Daily/Weekly/Monthly summary     | ✅ Yes         |
 | GET    | `/dashboard/:babyId`             | Aggregated dashboard data        | ✅ Yes         |
 
