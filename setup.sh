@@ -1,224 +1,160 @@
 #!/bin/bash
 
-# This script creates the Activity Logs microservice folder structure and starter files.
-# It assumes you are running it from the root of your Babybloom project.
+set -e
 
-SERVICE_DIR="backend/activityLogs"
+echo "🔧 Creating frontend folder for Babybloom (SnuggleStats UI)..."
 
-echo "Creating Activity Logs microservice structure in ${SERVICE_DIR}..."
+cd /Users/ajayyadav/code/babybloom/babybloom
+npm create vite@latest frontend -- --template react-ts
+cd frontend
 
-# Create necessary directories
-mkdir -p ${SERVICE_DIR}/{config,controllers,middleware,models,routes,tests}
+echo "📦 Installing dependencies..."
+pnpm install
+pnpm add -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
 
-# Create package.json
-cat > ${SERVICE_DIR}/package.json << 'EOF'
-{
-  "name": "activityLogs",
-  "version": "1.0.0",
-  "description": "Activity Logs microservice for Babybloom",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "jest"
+echo "⚙️ Configuring Tailwind..."
+cat > tailwind.config.js <<EOL
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "mongoose": "^6.0.0"
-  },
-  "devDependencies": {
-    "jest": "^27.0.0",
-    "nodemon": "^2.0.0",
-    "supertest": "^6.0.0"
-  }
+  plugins: [],
 }
-EOF
+EOL
 
-# Create .env file
-cat > ${SERVICE_DIR}/.env << 'EOF'
-PORT=5004
-MONGO_URI=mongodb://localhost:27017/babybloom-activityLogs
-EOF
+echo "🧼 Cleaning up starter files..."
+rm -f src/App.css src/index.css src/App.tsx src/main.tsx
 
-# Create the main index.js file
-cat > ${SERVICE_DIR}/index.js << 'EOF'
-require('dotenv').config();
-const express = require('express');
-const app = express();
-const mongoose = require('mongoose');
+echo "🎨 Creating custom Tailwind styles..."
+cat > src/index.css <<EOL
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+EOL
 
-// Database connection
-const connectDB = require('./config/db');
-connectDB();
+echo "📁 Creating basic project structure..."
+mkdir -p src/pages
 
-// Middleware
-app.use(express.json());
+# main.tsx
+cat > src/main.tsx <<EOL
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
 
-// Routes
-const sleepRoutes = require('./routes/sleepRoutes');
-app.use('/api/activity/sleep', sleepRoutes);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+EOL
 
-// Basic route
-app.get('/', (req, res) => {
-  res.send('Activity Logs microservice is running.');
-});
+# App.tsx
+cat > src/App.tsx <<EOL
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import SplashScreen from './pages/SplashScreen';
+import SignUp from './pages/SignUp';
+import Dashboard from './pages/Dashboard';
 
-const PORT = process.env.PORT || 5004;
-app.listen(PORT, () => {
-  console.log(`Activity Logs service running on port ${PORT}`);
-});
-EOF
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<SplashScreen />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
+}
 
-# Create configuration file for general settings
-cat > ${SERVICE_DIR}/config/config.js << 'EOF'
-module.exports = {
-  port: process.env.PORT || 5004,
-  mongoURI: process.env.MONGO_URI || 'mongodb://localhost:27017/babybloom-activityLogs'
-};
-EOF
+export default App;
+EOL
 
-# Create the database connection file
-cat > ${SERVICE_DIR}/config/db.js << 'EOF'
-const mongoose = require('mongoose');
-const config = require('./config');
+# SplashScreen.tsx
+cat > src/pages/SplashScreen.tsx <<EOL
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-module.exports = async function connectDB() {
-  try {
-    await mongoose.connect(config.mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-    console.log('MongoDB connected for Activity Logs service');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
-  }
-};
-EOF
+export default function SplashScreen() {
+  const navigate = useNavigate();
 
-# Create a placeholder sleep controller
-cat > ${SERVICE_DIR}/controllers/sleepController.js << 'EOF'
-exports.createSleepLog = (req, res) => {
-  // TODO: Implement logic to create a sleep log (with check for an incomplete log)
-  res.json({ message: 'Create sleep log endpoint' });
-};
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-pink-100 to-purple-100 text-center">
+      <h1 className="text-4xl font-bold mb-4">SnuggleStats</h1>
+      <p className="mb-8">Track your baby’s sleep, feeding, and diaper changes with love 💕</p>
+      <div className="space-x-4">
+        <button
+          onClick={() => navigate('/signup')}
+          className="bg-purple-500 text-white px-6 py-2 rounded-full shadow-md hover:bg-purple-600"
+        >
+          Sign Up
+        </button>
+        <button
+          onClick={() => navigate('/signup')}
+          className="bg-white text-purple-500 border border-purple-300 px-6 py-2 rounded-full shadow-md hover:bg-purple-50"
+        >
+          Login
+        </button>
+      </div>
+    </div>
+  );
+}
+EOL
 
-exports.getSleepLogs = (req, res) => {
-  // TODO: Implement logic to fetch sleep logs (optionally filtered by babyId)
-  res.json({ message: 'Get sleep logs endpoint' });
-};
+# SignUp.tsx
+cat > src/pages/SignUp.tsx <<EOL
+import React from 'react';
 
-exports.getIncompleteSleepLog = (req, res) => {
-  // TODO: Implement logic to get an incomplete sleep log for a baby
-  res.json({ message: 'Get incomplete sleep log endpoint' });
-};
+export default function SignUp() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+      <h2 className="text-2xl font-semibold mb-6">Create Your Account</h2>
+      <form className="w-full max-w-sm space-y-4">
+        <input type="text" placeholder="Full Name" className="w-full border p-2 rounded" />
+        <input type="email" placeholder="Email" className="w-full border p-2 rounded" />
+        <input type="password" placeholder="Password" className="w-full border p-2 rounded" />
+        <button
+          type="submit"
+          className="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600"
+        >
+          Sign Up
+        </button>
+      </form>
+    </div>
+  );
+}
+EOL
 
-exports.updateSleepLog = (req, res) => {
-  // TODO: Implement logic to update a sleep log (e.g., add endTime)
-  res.json({ message: 'Update sleep log endpoint' });
-};
-EOF
+# Dashboard.tsx
+cat > src/pages/Dashboard.tsx <<EOL
+import React from 'react';
 
-# Create a placeholder authentication middleware
-cat > ${SERVICE_DIR}/middleware/authMiddleware.js << 'EOF'
-module.exports = (req, res, next) => {
-  // TODO: Verify JWT token (this is a placeholder)
-  next();
-};
-EOF
+export default function Dashboard() {
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Your Babies</h2>
+      <div className="border p-4 rounded mb-4">
+        <div className="flex justify-between items-center">
+          <span>👶 Ava</span>
+          <div className="space-x-2">
+            <button className="text-sm text-blue-600">Rename</button>
+            <button className="text-sm text-red-500">Delete</button>
+          </div>
+        </div>
+        <button className="mt-2 text-sm text-purple-600">+ Add Activity</button>
+      </div>
+      <button className="bg-green-500 text-white px-4 py-2 rounded-full">+ Add New Baby</button>
+    </div>
+  );
+}
+EOL
 
-# Create the Mongoose schema for ActivityLog
-cat > ${SERVICE_DIR}/models/ActivityLog.js << 'EOF'
-const mongoose = require('mongoose');
-
-const ActivityLogSchema = new mongoose.Schema({
-  babyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Baby', required: true },
-  type: { type: String, required: true }, // e.g., 'sleep'
-  startTime: { type: Date, required: true },
-  endTime: { type: Date },
-  notes: { type: String },
-  status: { type: String, default: 'open' } // 'open' or 'closed'
-}, { timestamps: true });
-
-module.exports = mongoose.model('ActivityLog', ActivityLogSchema);
-EOF
-
-# Create sleep routes (starting point for sleep endpoints)
-cat > ${SERVICE_DIR}/routes/sleepRoutes.js << 'EOF'
-const express = require('express');
-const router = express.Router();
-const sleepController = require('../controllers/sleepController');
-const authMiddleware = require('../middleware/authMiddleware');
-
-router.use(authMiddleware);
-
-// POST /api/activity/sleep - Create a new sleep log
-router.post('/', sleepController.createSleepLog);
-
-// GET /api/activity/sleep - Retrieve sleep logs (optionally filtered by babyId)
-router.get('/', sleepController.getSleepLogs);
-
-// GET /api/activity/sleep/incomplete/:babyId - Get an incomplete sleep log for a baby
-router.get('/incomplete/:babyId', sleepController.getIncompleteSleepLog);
-
-// PUT /api/activity/sleep/:id - Update a sleep log (e.g., to add endTime)
-router.put('/:id', sleepController.updateSleepLog);
-
-module.exports = router;
-EOF
-
-# Create an index file for routes (optional aggregator)
-cat > ${SERVICE_DIR}/routes/index.js << 'EOF'
-const express = require('express');
-const router = express.Router();
-
-// Here you can aggregate routes if needed
-const sleepRoutes = require('./sleepRoutes');
-router.use('/sleep', sleepRoutes);
-
-module.exports = router;
-EOF
-
-# Create placeholder routes for diaper and feeding (to be expanded later)
-cat > ${SERVICE_DIR}/routes/diaperRoutes.js << 'EOF'
-// Placeholder for diaper routes
-const express = require('express');
-const router = express.Router();
-
-router.get('/', (req, res) => {
-  res.json({ message: 'Diaper routes placeholder' });
-});
-
-module.exports = router;
-EOF
-
-cat > ${SERVICE_DIR}/routes/feedingRoutes.js << 'EOF'
-// Placeholder for feeding routes
-const express = require('express');
-const router = express.Router();
-
-router.get('/', (req, res) => {
-  res.json({ message: 'Feeding routes placeholder' });
-});
-
-module.exports = router;
-EOF
-
-# Create jest configuration
-cat > ${SERVICE_DIR}/jest.config.js << 'EOF'
-module.exports = {
-  testEnvironment: 'node'
-};
-EOF
-
-# Create a sample test file
-cat > ${SERVICE_DIR}/tests/sample.test.js << 'EOF'
-test('sample test', () => {
-  expect(1 + 1).toBe(2);
-});
-EOF
-
-echo "Activity Logs microservice structure created successfully."
+echo "✅ SnuggleStats UI scaffolded inside frontend/"
+echo "👉 To start: cd frontend && pnpm dev"
