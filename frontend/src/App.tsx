@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import SplashScreen from './pages/SplashScreen';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
+import Login from './pages/Loging';
 import Babies from "./pages/Babies";
 
 function App() {

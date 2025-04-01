@@ -14,10 +14,10 @@ const app = express();
 app.use(express.json());
 
 // ✅ Enable CORS with Secure Cookie Handling
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true,  // ✅ Allow cookies to be sent with requests
-}));
+// app.use(cors({
+//     origin: process.env.FRONTEND_URL || "http://localhost:3000",
+//     credentials: true,  // ✅ Allow cookies to be sent with requests
+// }));
 
 app.use(cookieParser()); // ✅ Enable cookie parsing
 
