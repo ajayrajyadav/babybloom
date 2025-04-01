@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import SplashScreen from './pages/SplashScreen';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Babies from "./pages/Babies";
 
 function App() {
   return (
@@ -12,6 +14,8 @@ function App() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="*" element={<Navigate to="/" />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/babies" element={<Babies />} />
     </Routes>
   );
 }
