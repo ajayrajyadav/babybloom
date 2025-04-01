@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BabySlider from "../components/BabySlider"; // ⬅️ import the new component
 
 type Baby = {
   _id: string;
@@ -21,7 +22,7 @@ export default function Dashboard() {
           },
           credentials: "include", // ⬅️ critical for sending cookies
         });
-  
+
         if (res.ok) {
           const data = await res.json();
           console.log("🐣 Babies fetched via GET:", data);
@@ -34,7 +35,7 @@ export default function Dashboard() {
         console.error("🔥 Error calling GET /api/babies:", err);
       }
     };
-  
+
     fetchBabies();
   }, []);
 
@@ -46,16 +47,7 @@ export default function Dashboard() {
         <p className="text-navy mb-4">No babies yet. Click below to add one!</p>
       ) : (
         babies.map((baby) => (
-          <div key={baby._id} className="bg-white p-4 rounded-2xl shadow mb-4">
-            <div className="flex justify-between items-center">
-              <span className="text-lg">👧 {baby.name}</span>
-              <div className="space-x-2">
-                <button className="text-sm text-blue-600">Rename</button>
-                <button className="text-sm text-red-500">Delete</button>
-              </div>
-            </div>
-            <button className="mt-2 text-sm text-purple-600">+ Add Activity</button>
-          </div>
+          <BabySlider key={baby._id} baby={baby} />
         ))
       )}
 
