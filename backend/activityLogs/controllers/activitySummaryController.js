@@ -86,3 +86,30 @@ exports.getActivitySummary = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error generating summary.' });
   }
 };
+
+exports.getLastActivityLog = async (req, res) => {
+  try {
+    const { babyId } = req.params;
+
+    const [sleep, diaper, feeding] = await Promise.all([
+      ActivityLog.findOne({ babyId }).sort({ createdAt: -1 }),
+      DiaperLog.findOne({ babyId }).sort({ createdAt: -1 }),
+      FeedingLog.findOne({ babyId }).sort({ createdAt: -1 }),
+    ]);
+
+    const allLogs = [sleep, diaper, feeding].filter(Boolean);
+
+    if (allLogs.length === 0) {
+      return res.status(404).json({ message: "No activity logs found for this baby." });
+    }
+
+    const lastLog = allLogs.reduce((latest, current) =>
+      new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest
+    );
+
+    return res.status(200).json({ lastActivity: lastLog });
+  } catch (error) {
+    console.error("Error fetching last activity:", error);
+    return res.status(500).json({ message: "Server error while fetching last activity." });
+  }
+};

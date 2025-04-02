@@ -17,7 +17,7 @@ function App() {
       <Route path="*" element={<Navigate to="/" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/babies" element={<Babies />} />
-      <Route path="/activity/:type" element={<AddActivity />} />
+      <Route path="/activity/" element={<AddActivity />} />
     </Routes>
   );
 }

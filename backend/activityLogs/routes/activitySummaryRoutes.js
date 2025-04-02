@@ -9,4 +9,7 @@ router.get('/summary/:babyId', authMiddleware, activitySummaryController.getActi
 // GET /api/activity/dashboard/:babyId
 router.get('/dashboard/:babyId', authMiddleware, activitySummaryController.getActivitySummary);
 
+// GET /api/activity/last/:babyId
+router.get('/last/:babyId', authMiddleware, activitySummaryController.getLastActivityLog);
+
 module.exports = router;

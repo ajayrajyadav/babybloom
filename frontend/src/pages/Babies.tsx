@@ -1,69 +1,89 @@
-import React, { useEffect, useState } from "react";
-
-type Baby = {
-  _id: string;
-  name: string;
-};
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Babies() {
-  const [babies, setBabies] = useState<Baby[]>([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    name: "",
+    birthdate: "",
+    gender: ""
+  });
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchBabies = async () => {
-    setLoading(true);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async () => {
+    if (!form.name || !form.birthdate || !form.gender) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
     try {
-      const res = await fetch("/api/babies", { credentials: "include" });
+      const res = await fetch("/api/babies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form)
+      });
+
       if (res.ok) {
-        const data = await res.json();
-        setBabies(data);
+        navigate("/dashboard");
+      } else {
+        const err = await res.text();
+        setError(`Failed to create baby: ${err}`);
       }
     } catch (err) {
-      console.error("Failed to fetch babies", err);
+      setError("Server error. Please try again later.");
     }
-    setLoading(false);
   };
-
-  const handleDelete = async (id: string) => {
-    await fetch(`/api/babies/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    fetchBabies();
-  };
-
-  useEffect(() => {
-    fetchBabies();
-  }, []);
 
   return (
-    <div className="min-h-screen bg-skyblue p-6">
-      <h1 className="text-3xl font-bold text-navy mb-6">
-        🍼 Manage Your Babies
-      </h1>
-
-      {loading && <p className="text-navy">Loading...</p>}
-
-      {!loading && babies.length === 0 && (
-        <p className="text-navy">No babies yet. Go ahead and add one!</p>
-      )}
-
-      {babies.map((baby) => (
-        <div
-          key={baby._id}
-          className="bg-white p-4 rounded-2xl shadow mb-4 flex justify-between items-center"
+    <div className="min-h-screen bg-bubble p-6 text-navy">
+      <h2 className="text-2xl font-bold mb-4">➕ Add a New Baby</h2>
+      <div className="space-y-4 max-w-md mx-auto">
+        <input
+          name="name"
+          placeholder="Name"
+          value={form.name}
+          onChange={handleChange}
+          className="w-full p-2 rounded-xl border border-pink-300"
+        />
+        <input
+          type="date"
+          name="birthdate"
+          value={form.birthdate}
+          onChange={handleChange}
+          className="w-full p-2 rounded-xl border border-pink-300"
+        />
+        <select
+          name="gender"
+          value={form.gender}
+          onChange={handleChange}
+          className="w-full p-2 rounded-xl border border-pink-300"
         >
-          <span className="text-lg">{baby.name}</span>
-          <div className="space-x-2">
-            {/* Rename logic can go here later */}
-            <button
-              onClick={() => handleDelete(baby._id)}
-              className="text-sm text-red-500"
-            >
-              Delete
-            </button>
-          </div>
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <div className="flex gap-4">
+          <button
+            onClick={handleSubmit}
+            className="bg-brightpink text-white px-4 py-2 rounded-xl shadow hover:bg-pink-500 transition"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="border border-pink-300 text-navy px-4 py-2 rounded-xl hover:bg-white transition"
+          >
+            Cancel
+          </button>
         </div>
-      ))}
+      </div>
     </div>
   );
 }

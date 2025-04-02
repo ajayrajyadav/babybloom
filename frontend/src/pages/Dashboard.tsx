@@ -1,38 +1,61 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BabySlider from "../components/BabySlider"; // ⬅️ import the new component
+import BabySlider from "../components/BabySlider";
 
-type Baby = {
+interface Baby {
   _id: string;
   name: string;
-};
+}
+
+interface Activity {
+  type: string;
+  startTime?: string;
+  endTime?: string;
+  contents?: string;
+  notes?: string;
+}
 
 export default function Dashboard() {
   const [babies, setBabies] = useState<Baby[]>([]);
+  const [lastActivities, setLastActivities] = useState<Record<string, Activity | null>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBabies = async () => {
       try {
-        console.log("🔐 userId from localStorage:", localStorage.getItem("userId"));
         const res = await fetch("/api/babies", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // ⬅️ critical for sending cookies
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
 
         if (res.ok) {
           const data = await res.json();
-          console.log("🐣 Babies fetched via GET:", data);
           setBabies(data);
+
+          // Fetch last activity for each baby
+          data.forEach(async (baby: Baby) => {
+            try {
+              const activityRes = await fetch(`/api/activity/last/${baby._id}`, {
+                method: "GET",
+                credentials: "include",
+              });
+              if (activityRes.ok) {
+                const activityData = await activityRes.json();
+                setLastActivities((prev) => ({ ...prev, [baby._id]: activityData.lastActivity }));
+              } else {
+                setLastActivities((prev) => ({ ...prev, [baby._id]: null }));
+              }
+            } catch (err) {
+              console.error("Error fetching last activity for", baby.name, err);
+              setLastActivities((prev) => ({ ...prev, [baby._id]: null }));
+            }
+          });
         } else {
-          const error = await res.text();
-          console.error("❌ Failed GET /api/babies:", error);
+          console.error("Failed to fetch babies");
         }
-      } catch (err) {
-        console.error("🔥 Error calling GET /api/babies:", err);
+      } catch (error) {
+        console.error("Error fetching babies:", error);
       }
     };
 
@@ -47,7 +70,9 @@ export default function Dashboard() {
         <p className="text-navy mb-4">No babies yet. Click below to add one!</p>
       ) : (
         babies.map((baby) => (
-          <BabySlider key={baby._id} baby={baby} />
+          <div key={baby._id}>
+            <BabySlider baby={baby} lastActivity={lastActivities[baby._id]} />
+          </div>
         ))
       )}
 
