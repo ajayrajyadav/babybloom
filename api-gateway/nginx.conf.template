@@ -46,7 +46,7 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        location /api/babies/ {
+        location /api/babies {
             proxy_pass http://localhost:5002;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;

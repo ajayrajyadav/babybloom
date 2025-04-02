@@ -9,6 +9,7 @@ router.use(authenticateUser);
 // 👶 Create a baby profile
 router.post('/', async (req, res) => {
   try {
+    console.log("📥 Incoming create baby request body:", req.body);
     const newBaby = new Baby({
       name: req.body.name,
       birthdate: req.body.birthdate,

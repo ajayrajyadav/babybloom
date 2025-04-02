@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import BabySlider from "../components/BabySlider";
 
@@ -20,47 +20,51 @@ export default function Dashboard() {
   const [lastActivities, setLastActivities] = useState<Record<string, Activity | null>>({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchBabies = async () => {
-      try {
-        const res = await fetch("/api/babies", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
+  const fetchBabies = useCallback(async () => {
+    try {
+      const res = await fetch("/api/babies", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setBabies(data);
+
+        // Fetch last activity per baby
+        const activityFetches = data.map(async (baby: Baby) => {
+          try {
+            const res = await fetch(`/api/activity/last/${baby._id}`, {
+              credentials: "include",
+            });
+            if (res.ok) {
+              const activityData = await res.json();
+              return { babyId: baby._id, activity: activityData.lastActivity };
+            }
+          } catch {
+            return { babyId: baby._id, activity: null };
+          }
+          return { babyId: baby._id, activity: null };
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          setBabies(data);
-
-          // Fetch last activity for each baby
-          data.forEach(async (baby: Baby) => {
-            try {
-              const activityRes = await fetch(`/api/activity/last/${baby._id}`, {
-                method: "GET",
-                credentials: "include",
-              });
-              if (activityRes.ok) {
-                const activityData = await activityRes.json();
-                setLastActivities((prev) => ({ ...prev, [baby._id]: activityData.lastActivity }));
-              } else {
-                setLastActivities((prev) => ({ ...prev, [baby._id]: null }));
-              }
-            } catch (err) {
-              console.error("Error fetching last activity for", baby.name, err);
-              setLastActivities((prev) => ({ ...prev, [baby._id]: null }));
-            }
-          });
-        } else {
-          console.error("Failed to fetch babies");
-        }
-      } catch (error) {
-        console.error("Error fetching babies:", error);
+        const results = await Promise.all(activityFetches);
+        const updatedActivities: Record<string, Activity | null> = {};
+        results.forEach(({ babyId, activity }) => {
+          updatedActivities[babyId] = activity;
+        });
+        setLastActivities(updatedActivities);
+      } else {
+        console.error("Failed to fetch babies");
       }
-    };
-
-    fetchBabies();
+    } catch (error) {
+      console.error("Error fetching babies:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchBabies();
+  }, [fetchBabies]);
 
   return (
     <div className="min-h-screen bg-babyblue p-6">
@@ -71,7 +75,11 @@ export default function Dashboard() {
       ) : (
         babies.map((baby) => (
           <div key={baby._id}>
-            <BabySlider baby={baby} lastActivity={lastActivities[baby._id]} />
+            <BabySlider
+              baby={baby}
+              lastActivity={lastActivities[baby._id]}
+              refresh={fetchBabies}
+            />
           </div>
         ))
       )}

@@ -2,88 +2,98 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Babies() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     birthdate: "",
-    gender: ""
+    gender: "Male",
   });
-  const [error, setError] = useState<string | null>(null);
+
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.birthdate || !form.gender) {
-      setError("Please fill in all fields.");
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevents page reload
+    setError("");
+
+    const payload = {
+      name: form.name,
+      birthdate: form.birthdate,
+      gender: form.gender,
+    };
+
+    console.log("📦 Submitting baby:", JSON.stringify(payload));
 
     try {
       const res = await fetch("/api/babies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload),
       });
 
+      const resultText = await res.text();
+      console.log("🔁 Server response text:", resultText);
+
       if (res.ok) {
+        console.log("✅ Baby created successfully");
         navigate("/dashboard");
       } else {
-        const err = await res.text();
-        setError(`Failed to create baby: ${err}`);
+        setError(`Creation failed: ${res.status}`);
+        console.error("❌ Creation failed with status:", res.status);
       }
     } catch (err) {
-      setError("Server error. Please try again later.");
+      console.error("🔥 Error submitting baby:", err);
+      setError("Something went wrong. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-bubble p-6 text-navy">
-      <h2 className="text-2xl font-bold mb-4">➕ Add a New Baby</h2>
-      <div className="space-y-4 max-w-md mx-auto">
+    <div className="min-h-screen bg-babyblue p-6">
+      <h2 className="text-3xl font-bold text-navy mb-4">Add a Baby</h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           name="name"
+          type="text"
           placeholder="Name"
           value={form.name}
           onChange={handleChange}
-          className="w-full p-2 rounded-xl border border-pink-300"
+          className="block w-full p-2 rounded-lg border border-gray-300"
+          required
         />
+
         <input
-          type="date"
           name="birthdate"
+          type="date"
           value={form.birthdate}
           onChange={handleChange}
-          className="w-full p-2 rounded-xl border border-pink-300"
+          className="block w-full p-2 rounded-lg border border-gray-300"
+          required
         />
+
         <select
           name="gender"
           value={form.gender}
           onChange={handleChange}
-          className="w-full p-2 rounded-xl border border-pink-300"
+          className="block w-full p-2 rounded-lg border border-gray-300"
         >
-          <option value="">Select Gender</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
-          <option value="Other">Other</option>
         </select>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <div className="flex gap-4">
-          <button
-            onClick={handleSubmit}
-            className="bg-brightpink text-white px-4 py-2 rounded-xl shadow hover:bg-pink-500 transition"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="border border-pink-300 text-navy px-4 py-2 rounded-xl hover:bg-white transition"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+
+        {error && <p className="text-red-500">{error}</p>}
+
+        <button
+          type="submit"
+          className="bg-brightpink text-white px-4 py-2 rounded-2xl shadow hover:bg-pink-500 transition"
+        >
+          Save
+        </button>
+      </form>
     </div>
   );
 }
