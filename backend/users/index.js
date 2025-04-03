@@ -13,7 +13,11 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cookieParser()); // Enable cookie parsing
-app.use(cors({ credentials: true, origin: "http://localhost:3000" })); // Adjust origin if needed
+//app.use(cors({ credentials: true, origin: "http://localhost:3000" })); // Adjust origin if needed
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+  }));
 app.use(helmet());
 app.use(morgan("dev"));
 
