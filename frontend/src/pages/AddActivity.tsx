@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { getUserTimezone } from "../utils/timeUtils";
 
 export default function AddActivity() {
   const [searchParams] = useSearchParams();
@@ -11,16 +12,23 @@ export default function AddActivity() {
     time: new Date().toISOString().slice(0, 16),
     startTime: new Date().toISOString().slice(0, 16),
     endTime: "",
+    durationHours: "",
+    durationMinutes: "",
     contents: "",
     color: "",
     notes: "",
   });
 
   const [incompleteLogId, setIncompleteLogId] = useState<string | null>(null);
+  const [incompleteStartTime, setIncompleteStartTime] = useState<string | null>(null);
+  const [useEndTime, setUseEndTime] = useState(false); // 🆕 toggle between endTime and duration
 
   useEffect(() => {
     if (!type || !babyId) {
       navigate("/dashboard");
+    } else {
+      const timezone = getUserTimezone();
+      console.log("🕒 User's timezone is:", timezone);
     }
   }, [type, babyId]);
 
@@ -33,14 +41,19 @@ export default function AddActivity() {
 
         if (res.ok) {
           const data = await res.json();
-          if (data?.incompleteLog?._id) {
-            setIncompleteLogId(data.incompleteLog._id);
+          const log = data?.data || data?.incompleteLog;
+          if (log?._id) {
+            setIncompleteLogId(log._id);
+            setIncompleteStartTime(log.startTime?.slice(0, 16) || null);
             setForm((prev: any) => ({
               ...prev,
-              startTime: data.incompleteLog.startTime?.slice(0, 16) || prev.startTime,
-              notes: data.incompleteLog.notes || "",
-              amount: data.incompleteLog.amount || "",
-              method: data.incompleteLog.method || "",
+              startTime: log.startTime?.slice(0, 16) || prev.startTime,
+              notes: log.notes || "",
+              amount: log.amount || "",
+              method: log.method || "",
+              endTime: "",
+              durationHours: "",
+              durationMinutes: "",
             }));
           }
         }
@@ -70,17 +83,45 @@ export default function AddActivity() {
     }
 
     if (type === "sleep" || type === "feeding") {
-      if (incompleteLogId && form.endTime) {
-        payload.endTime = new Date(form.endTime).toISOString();
-      } else {
-        payload.startTime = new Date(form.startTime).toISOString();
+      payload.startTime = new Date(form.startTime).toISOString();
+
+      if (incompleteLogId) {
+        const start = new Date(form.startTime);
+        console.log("Start: " + start.toISOString());
+
+        if (!useEndTime && (form.durationHours || form.durationMinutes)) {
+          const totalMinutes =
+            Number(form.durationHours || 0) * 60 + Number(form.durationMinutes || 0);
+          if (totalMinutes <= 0) {
+            alert("❌ Duration must be greater than 0.");
+            return;
+          }
+          const durationMs = totalMinutes * 60000;
+          const calculatedEnd = new Date(start.getTime() + durationMs);
+
+          payload.endTime = calculatedEnd.toISOString();
+          payload.duration = Math.floor(durationMs / 1000);
+        } else if (useEndTime && form.endTime && form.endTime.trim() !== "") {
+          console.log("End time provided:", form.endTime);
+          console.log("Endtime.trim():", form.endTime.trim());
+          const end = new Date(form.endTime);
+          if (end <= start) {
+            console.log("Inside end<=start");
+            alert("❌ End time must be after start time.");
+            return;
+          }
+          payload.endTime = end.toISOString();
+        } else {
+          alert("❌ Please provide either an end time or duration.");
+          return;
+        }
       }
     }
 
     const url = incompleteLogId
       ? `/api/activity/${type}/${incompleteLogId}`
       : `/api/activity/${type}`;
-    const method = incompleteLogId ? "PUT" : "POST";
+    const method = incompleteLogId ? "PATCH" : "POST";
 
     try {
       const res = await fetch(url, {
@@ -106,7 +147,17 @@ export default function AddActivity() {
     <div className="min-h-screen bg-bubble p-6 text-navy">
       <h2 className="text-2xl font-bold mb-4">➕ Log {type} activity</h2>
       <div className="space-y-4 max-w-md mx-auto">
-        {(type === "diaper" || type === "feeding") && !incompleteLogId && (
+
+        {incompleteLogId && (type === "sleep" || type === "feeding") && incompleteStartTime && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded">
+            <p>
+              💤 Sleep started at <strong>{new Date(incompleteStartTime).toLocaleString()}</strong>
+            </p>
+            <p>Add end time or duration below to complete this log.</p>
+          </div>
+        )}
+
+        {(type === "diaper") && !incompleteLogId && (
           <input
             type="datetime-local"
             name="time"
@@ -119,22 +170,106 @@ export default function AddActivity() {
         {(type === "sleep" || type === "feeding") && (
           <>
             {!incompleteLogId && (
-              <input
-                type="datetime-local"
-                name="startTime"
-                value={form.startTime}
-                onChange={handleChange}
-                className="w-full p-2 rounded-xl border border-pink-300"
-              />
+              <>
+                <input
+                  type="datetime-local"
+                  name="startTime"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  className="w-full p-2 rounded-xl border border-pink-300"
+                />
+                {type === "feeding" && (
+                  <label className="block text-sm text-navy">
+                    <input
+                      type="checkbox"
+                      checked={useEndTime}
+                      onChange={(e) => setUseEndTime(e.target.checked)}
+                      className="mr-2"
+                    />
+                    Enter end time instead
+                  </label>
+                )}
+                {!useEndTime ? (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      name="durationHours"
+                      value={form.durationHours}
+                      onChange={handleChange}
+                      placeholder="Hours"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <input
+                      type="number"
+                      name="durationMinutes"
+                      value={form.durationMinutes}
+                      onChange={handleChange}
+                      placeholder="Minutes"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type="datetime-local"
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    className="w-full p-2 rounded-xl border border-pink-300"
+                    placeholder="End time"
+                  />
+                )}
+              </>
             )}
+
             {incompleteLogId && (
-              <input
-                type="datetime-local"
-                name="endTime"
-                value={form.endTime}
-                onChange={handleChange}
-                className="w-full p-2 rounded-xl border border-pink-300"
-              />
+              <>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={useEndTime}
+                    onChange={() => setUseEndTime(!useEndTime)}
+                  />
+                  <span className="text-sm">Enter end time instead</span>
+                </label>
+
+                {useEndTime ? (
+                  <input
+                    key={incompleteLogId + "_endTime"}
+                    type="datetime-local"
+                    name="endTime"
+                    value={form.endTime ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 rounded-xl border border-pink-300"
+                    placeholder="End time"
+                    autoComplete="new-password"
+                    inputMode="none"
+                  />
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      name="durationHours"
+                      value={form.durationHours}
+                      onChange={handleChange}
+                      placeholder="Hours"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <input
+                      type="number"
+                      name="durationMinutes"
+                      value={form.durationMinutes}
+                      onChange={handleChange}
+                      placeholder="Minutes"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <span className="text-sm text-gray-500">← or enter duration</span>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

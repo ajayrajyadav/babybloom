@@ -73,7 +73,6 @@ exports.getIncompleteSleepLog = async (req, res) => {
 };
 
 // Update a sleep log (to add an endTime)
-// Update a sleep log (to add an endTime)
 exports.updateSleepLog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,12 +95,11 @@ exports.updateSleepLog = async (req, res) => {
     if (notes) log.notes = notes;
     log.status = 'completed';
 
-    // 💡 Calculate duration in minutes
     const start = new Date(log.startTime);
     const end = new Date(endTime);
     const durationMs = end - start;
-    const durationInMinutes = Math.floor(durationMs / (1000 * 60));
-    log.durationInMinutes = durationInMinutes;
+    const duration = Math.floor(durationMs / 1000);
+    log.duration = duration;
 
     await log.save();
 
@@ -115,21 +113,69 @@ exports.updateSleepLog = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error while updating sleep log.' });
   }
 };
+
+// Get total sleep duration
 exports.getTotalSleepTime = async (req, res) => {
   const { babyId } = req.params;
-
   try {
     const logs = await ActivityLog.find({
       babyId,
-      type: "sleep",
-      status: "completed",
+      type: 'sleep',
+      status: 'completed',
       duration: { $exists: true },
     });
-
     const totalSeconds = logs.reduce((acc, log) => acc + (log.duration || 0), 0);
     res.json({ success: true, totalSeconds });
   } catch (error) {
-    console.error("💥 Error calculating total sleep time:", error);
-    res.status(500).json({ success: false, message: "Server error while calculating sleep duration." });
+    console.error('💥 Error calculating total sleep time:', error);
+    res.status(500).json({ success: false, message: 'Server error while calculating sleep duration.' });
+  }
+};
+
+// ✅ Get last sleep log for a baby
+exports.getLastSleepLog = async (req, res) => {
+  try {
+    const { babyId } = req.params;
+    const lastLog = await ActivityLog.findOne({
+      babyId,
+      type: 'sleep',
+      status: 'completed'
+    }).sort({ endTime: -1 });
+
+    if (!lastLog) {
+      return res.status(404).json({ success: false, message: 'No completed sleep logs found.' });
+    }
+
+    res.status(200).json({ success: true, data: lastLog });
+  } catch (error) {
+    console.error('💥 Error fetching last sleep log:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching last sleep log.' });
+  }
+};
+
+// ✅ Get all completed sleep logs by period
+exports.getCompletedSleepLogs = async (req, res) => {
+  try {
+    const { babyId } = req.params;
+    const { period = 'daily' } = req.query;
+
+    const now = new Date();
+    let start = new Date(now);
+
+    if (period === 'weekly') start.setDate(now.getDate() - 7);
+    else if (period === 'monthly') start.setMonth(now.getMonth() - 1);
+    else start.setHours(0, 0, 0, 0);
+
+    const logs = await ActivityLog.find({
+      babyId,
+      type: 'sleep',
+      status: 'completed',
+      startTime: { $gte: start, $lte: now },
+    }).sort({ startTime: -1 });
+
+    res.status(200).json({ success: true, data: logs });
+  } catch (error) {
+    console.error('💥 Error fetching completed sleep logs:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching logs.' });
   }
 };
