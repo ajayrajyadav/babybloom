@@ -68,7 +68,7 @@ export default function AddActivity() {
 
   const handleSubmit = async () => {
     const payload: any = { babyId, notes: form.notes };
-
+  
     if (type === "diaper" || type === "feeding") {
       payload.time = new Date(form.time).toISOString();
       if (type === "diaper") {
@@ -76,53 +76,49 @@ export default function AddActivity() {
         payload.color = form.color;
       }
     }
-
+  
     if (type === "feeding") {
       payload.amount = Number(form.amount);
       payload.method = form.method;
     }
-
+  
     if (type === "sleep" || type === "feeding") {
-      payload.startTime = new Date(form.startTime).toISOString();
-
-      if (incompleteLogId) {
-        const start = new Date(form.startTime);
-        console.log("Start: " + start.toISOString());
-
-        if (!useEndTime && (form.durationHours || form.durationMinutes)) {
-          const totalMinutes =
-            Number(form.durationHours || 0) * 60 + Number(form.durationMinutes || 0);
-          if (totalMinutes <= 0) {
-            alert("❌ Duration must be greater than 0.");
-            return;
-          }
-          const durationMs = totalMinutes * 60000;
-          const calculatedEnd = new Date(start.getTime() + durationMs);
-
-          payload.endTime = calculatedEnd.toISOString();
-          payload.duration = Math.floor(durationMs / 1000);
-        } else if (useEndTime && form.endTime && form.endTime.trim() !== "") {
-          console.log("End time provided:", form.endTime);
-          console.log("Endtime.trim():", form.endTime.trim());
-          const end = new Date(form.endTime);
-          if (end <= start) {
-            console.log("Inside end<=start");
-            alert("❌ End time must be after start time.");
-            return;
-          }
-          payload.endTime = end.toISOString();
-        } else {
-          alert("❌ Please provide either an end time or duration.");
+      const start = new Date(form.startTime);
+      payload.startTime = start.toISOString();
+  
+      const durationHours = Number(form.durationHours || 0);
+      const durationMinutes = Number(form.durationMinutes || 0);
+      const totalMinutes = durationHours * 60 + durationMinutes;
+  
+      const isDurationValid =
+        (!useEndTime && (durationHours > 0 || durationMinutes > 0)) &&
+        (durationHours >= 0 && durationHours <= 12) &&
+        (durationMinutes >= 0 && durationMinutes <= 59);
+  
+      if (!useEndTime && isDurationValid) {
+        const durationMs = totalMinutes * 60 * 1000;
+        const calculatedEnd = new Date(start.getTime() + durationMs);
+  
+        payload.endTime = calculatedEnd.toISOString();
+        payload.duration = Math.floor(durationMs / 1000);
+      } else if (useEndTime && form.endTime && form.endTime.trim() !== "") {
+        const end = new Date(form.endTime);
+        if (end <= start) {
+          alert("❌ End time must be after start time.");
           return;
         }
+        payload.endTime = end.toISOString();
+      } else {
+        alert("❌ Please provide either a valid end time or duration.");
+        return;
       }
     }
-
+  
     const url = incompleteLogId
       ? `/api/activity/${type}/${incompleteLogId}`
       : `/api/activity/${type}`;
     const method = incompleteLogId ? "PATCH" : "POST";
-
+  
     try {
       const res = await fetch(url, {
         method,
@@ -130,7 +126,7 @@ export default function AddActivity() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
-
+  
       if (res.ok) {
         console.log(`✅ ${type} activity ${incompleteLogId ? "updated" : "created"}`);
         navigate("/dashboard");

@@ -19,7 +19,7 @@ export default function Navbar() {
         <Link to="/dashboard">Dashboard</Link>
         <Link to="/babies">Babies</Link>
         <Link to="/summary">Summary</Link> {/* 🆕 Added here */}
-     </div>
+      </div>
 
       {isOpen && (
         <div className="absolute top-16 left-0 w-full bg-white shadow-md flex flex-col items-start p-4 md:hidden">
