@@ -10,5 +10,8 @@ router.get("/incomplete/:babyId", feedingController.getIncompleteFeedingLog);
 router.get("/", feedingController.getFeedingLogs);
 router.patch("/:id", feedingController.updateFeedingLog);
 router.get('/total/:babyId', feedingController.getTotalFeedingTime);
+router.get("/last/:babyId", feedingController.getLastFeedingLog);
+router.get("/completed/:babyId", feedingController.getCompletedFeedingLogs);
+router.get("/methods", feedingController.getFeedingMethods);
 
 module.exports = router;

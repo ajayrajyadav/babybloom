@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Node",
+    "types": ["cypress"],
+    "jsx": "react"
+  },
+  "include": ["cypress/**/*.ts"]
+}

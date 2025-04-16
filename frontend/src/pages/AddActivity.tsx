@@ -1,46 +1,78 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { getUserTimezone, toLocalDatetimeInputValue } from "../utils/timeUtils";
+
 
 export default function AddActivity() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const type = searchParams.get("type"); // 'diaper', 'sleep', 'feeding'
   const babyId = searchParams.get("babyId");
+  const [feedingMethods, setFeedingMethods] = useState<string[]>([]);
 
   const [form, setForm] = useState<any>({
-    time: new Date().toISOString().slice(0, 16),
-    startTime: new Date().toISOString().slice(0, 16),
+    time: toLocalDatetimeInputValue(new Date()),
+    startTime: toLocalDatetimeInputValue(new Date()),
     endTime: "",
+    durationHours: "",
+    durationMinutes: "",
     contents: "",
     color: "",
     notes: "",
   });
 
   const [incompleteLogId, setIncompleteLogId] = useState<string | null>(null);
+  const [incompleteStartTime, setIncompleteStartTime] = useState<string | null>(null);
+  const [useEndTime, setUseEndTime] = useState(false); // 🆕 toggle between endTime and duration
 
   useEffect(() => {
     if (!type || !babyId) {
       navigate("/dashboard");
+    } else {
+      const timezone = getUserTimezone();
+      console.log("🕒 User's timezone is:", timezone);
+  
+      // 🆕 Fetch feeding methods from the backend
+      if (type === "feeding") {
+        fetch("/api/activity/feeding/methods", { credentials: "include" })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setFeedingMethods(data.data); // 🧠 make sure you have setFeedingMethods state
+            } else {
+              console.warn("⚠️ Failed to fetch feeding methods:", data.message);
+            }
+          })
+          .catch((err) => {
+            console.error("🔥 Error fetching feeding methods:", err);
+          });
+      }
     }
   }, [type, babyId]);
-
+  
   useEffect(() => {
     const fetchIncomplete = async () => {
       if (type === "sleep" || type === "feeding") {
         const res = await fetch(`/api/activity/${type}/incomplete/${babyId}`, {
           credentials: "include",
         });
-
+  
         if (res.ok) {
           const data = await res.json();
-          if (data?.incompleteLog?._id) {
-            setIncompleteLogId(data.incompleteLog._id);
+          console.log("Incomplete sleep log response:", data);
+          const log = data?.data || data?.incompleteLog;
+          if (log?._id) {
+            setIncompleteLogId(log._id);
+            setIncompleteStartTime(log.startTime?.slice(0, 16) || null);
             setForm((prev: any) => ({
               ...prev,
-              startTime: data.incompleteLog.startTime?.slice(0, 16) || prev.startTime,
-              notes: data.incompleteLog.notes || "",
-              amount: data.incompleteLog.amount || "",
-              method: data.incompleteLog.method || "",
+              startTime: toLocalDatetimeInputValue(new Date(log.startTime || prev.startTime)),
+              notes: log.notes || "",
+              amount: log.amount || "",
+              method: log.method || "",
+              endTime: "", // reset
+              durationHours: "",
+              durationMinutes: "",
             }));
           }
         }
@@ -49,13 +81,15 @@ export default function AddActivity() {
     fetchIncomplete();
   }, [type, babyId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
     const payload: any = { babyId, notes: form.notes };
-
+  
     if (type === "diaper" || type === "feeding") {
       payload.time = new Date(form.time).toISOString();
       if (type === "diaper") {
@@ -63,25 +97,51 @@ export default function AddActivity() {
         payload.color = form.color;
       }
     }
-
+  
     if (type === "feeding") {
       payload.amount = Number(form.amount);
       payload.method = form.method;
     }
-
+  
     if (type === "sleep" || type === "feeding") {
-      if (incompleteLogId && form.endTime) {
-        payload.endTime = new Date(form.endTime).toISOString();
-      } else {
-        payload.startTime = new Date(form.startTime).toISOString();
+      const start = new Date(form.startTime);
+      payload.startTime = start.toISOString();
+  
+      const durationHours = Number(form.durationHours || 0);
+      const durationMinutes = Number(form.durationMinutes || 0);
+      const totalMinutes = durationHours * 60 + durationMinutes;
+  
+      const isDurationValid =
+        (!useEndTime && (durationHours > 0 || durationMinutes > 0)) &&
+        durationHours >= 0 && durationHours <= 12 &&
+        durationMinutes >= 0 && durationMinutes <= 59;
+  
+      let finalEndTime: Date | null = null;
+  
+      if (isDurationValid) {
+        const durationSeconds = totalMinutes * 60;
+        finalEndTime = new Date(start.getTime() + durationSeconds * 1000);
+        payload.endTime = finalEndTime.toISOString();
+        payload.duration = durationSeconds;
+      } else if (useEndTime && form.endTime && form.endTime.trim() !== "") {
+        finalEndTime = new Date(form.endTime);
+        if (finalEndTime <= start) {
+          alert("❌ End time must be after start time.");
+          return;
+        }
+        payload.endTime = finalEndTime.toISOString();
+      } else if (incompleteLogId) {
+        // Only alert if we're updating an incomplete log
+        alert("❌ Please provide either a valid end time or duration.");
+        return;
       }
     }
-
+  
     const url = incompleteLogId
       ? `/api/activity/${type}/${incompleteLogId}`
       : `/api/activity/${type}`;
-    const method = incompleteLogId ? "PUT" : "POST";
-
+    const method = incompleteLogId ? "PATCH" : "POST";
+  
     try {
       const res = await fetch(url, {
         method,
@@ -89,7 +149,7 @@ export default function AddActivity() {
         credentials: "include",
         body: JSON.stringify(payload),
       });
-
+  
       if (res.ok) {
         console.log(`✅ ${type} activity ${incompleteLogId ? "updated" : "created"}`);
         navigate("/dashboard");
@@ -106,7 +166,17 @@ export default function AddActivity() {
     <div className="min-h-screen bg-bubble p-6 text-navy">
       <h2 className="text-2xl font-bold mb-4">➕ Log {type} activity</h2>
       <div className="space-y-4 max-w-md mx-auto">
-        {(type === "diaper" || type === "feeding") && !incompleteLogId && (
+
+        {incompleteLogId && (type === "sleep" || type === "feeding") && incompleteStartTime && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800 p-3 rounded">
+            <p>
+              💤 Sleep started at <strong>{new Date(incompleteStartTime).toLocaleString()}</strong>
+            </p>
+            <p>Add end time or duration below to complete this log.</p>
+          </div>
+        )}
+
+        {(type === "diaper") && !incompleteLogId && (
           <input
             type="datetime-local"
             name="time"
@@ -119,22 +189,106 @@ export default function AddActivity() {
         {(type === "sleep" || type === "feeding") && (
           <>
             {!incompleteLogId && (
-              <input
-                type="datetime-local"
-                name="startTime"
-                value={form.startTime}
-                onChange={handleChange}
-                className="w-full p-2 rounded-xl border border-pink-300"
-              />
+              <>
+                <input
+                  type="datetime-local"
+                  name="startTime"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  className="w-full p-2 rounded-xl border border-pink-300"
+                />
+                {type === "feeding" && (
+                  <label className="block text-sm text-navy">
+                    <input
+                      type="checkbox"
+                      checked={useEndTime}
+                      onChange={(e) => setUseEndTime(e.target.checked)}
+                      className="mr-2"
+                    />
+                    Enter end time instead
+                  </label>
+                )}
+                {!useEndTime ? (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      name="durationHours"
+                      value={form.durationHours}
+                      onChange={handleChange}
+                      placeholder="Hours"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <input
+                      type="number"
+                      name="durationMinutes"
+                      value={form.durationMinutes}
+                      onChange={handleChange}
+                      placeholder="Minutes"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                  </div>
+                ) : (
+                  <input
+                    type="datetime-local"
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    className="w-full p-2 rounded-xl border border-pink-300"
+                    placeholder="End time"
+                  />
+                )}
+              </>
             )}
+
             {incompleteLogId && (
-              <input
-                type="datetime-local"
-                name="endTime"
-                value={form.endTime}
-                onChange={handleChange}
-                className="w-full p-2 rounded-xl border border-pink-300"
-              />
+              <>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={useEndTime}
+                    onChange={() => setUseEndTime(!useEndTime)}
+                  />
+                  <span className="text-sm">Enter end time instead</span>
+                </label>
+
+                {useEndTime ? (
+                  <input
+                    key={incompleteLogId + "_endTime"}
+                    type="datetime-local"
+                    name="endTime"
+                    value={form.endTime ?? ""}
+                    onChange={handleChange}
+                    className="w-full p-2 rounded-xl border border-pink-300"
+                    placeholder="End time"
+                    autoComplete="new-password"
+                    inputMode="none"
+                  />
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      name="durationHours"
+                      value={form.durationHours}
+                      onChange={handleChange}
+                      placeholder="Hours"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <input
+                      type="number"
+                      name="durationMinutes"
+                      value={form.durationMinutes}
+                      onChange={handleChange}
+                      placeholder="Minutes"
+                      className="w-full p-2 rounded-xl border border-pink-300"
+                      min={0}
+                    />
+                    <span className="text-sm text-gray-500">← or enter duration</span>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -149,13 +303,20 @@ export default function AddActivity() {
               className="w-full p-2 rounded-xl border border-pink-300"
               type="number"
             />
-            <input
+
+            <select
               name="method"
-              placeholder="Method (e.g. bottle, breast)"
               value={form.method || ""}
               onChange={handleChange}
               className="w-full p-2 rounded-xl border border-pink-300"
-            />
+            >
+              <option value="">Select method</option>
+              {feedingMethods.map((method) => (
+                <option key={method} value={method}>
+                  {method.charAt(0).toUpperCase() + method.slice(1)}
+                </option>
+              ))}
+            </select>
           </>
         )}
 

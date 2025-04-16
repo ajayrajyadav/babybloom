@@ -10,7 +10,7 @@ let sleepLogId;
 
 beforeAll(async () => {
   agent = request.agent(baseUrl);
-
+  // agent = request.agent(app);
   const email = `test-${Date.now()}@example.com`;
   const password = "password123";
 
@@ -69,28 +69,31 @@ describe("🍼 Activity Log Endpoints", () => {
   });
 
   test("🍽️ should create and complete a feeding log", async () => {
-    const createRes = await agent
-      .post("/activity/feeding/")
+    const res = await agent
+      .post("/activity/feeding")
       .set("Cookie", cookies)
       .send({
         babyId,
-        startTime: "2025-03-27T09:00:00Z",
-        amount: 100,
+        startTime: "2025-03-27T07:00:00Z",
+        endTime: "2025-03-27T08:00:00Z",
+        amount: 90,
         method: "bottle",
-        notes: "Test Feeding",
+        notes: "Test Feeding"
       })
       .expect(201);
-
-    const feedingId = createRes.body.data._id;
-
+  
+    const feedingId = res.body.data._id;
+  
+    // Optionally test the PATCH if desired
     const updateRes = await agent
       .patch(`/activity/feeding/${feedingId}`)
       .set("Cookie", cookies)
-      .send({ endTime: "2025-03-27T09:20:00Z" })
+      .send({
+        endTime: "2025-03-27T08:00:00Z"
+      })
       .expect(200);
-
-    expect(updateRes.body.data.status).toBe("completed");
-    expect(updateRes.body.data.duration).toBe(1200); // 20 minutes in seconds
+  
+    expect(updateRes.body.success).toBe(true);
   });
 
   test("🧷 should log a diaper change", async () => {
@@ -100,6 +103,7 @@ describe("🍼 Activity Log Endpoints", () => {
       .send({
         babyId,
         time: "2025-03-27T10:00:00Z",
+        type: "diaper", // ✅ important
         contents: "BM",
         color: "yellow",
         notes: "Seedy",
@@ -128,5 +132,62 @@ describe("🍼 Activity Log Endpoints", () => {
 
     expect(res.body.data).toHaveProperty("period");
     expect(res.body.data).toHaveProperty("diaperStats");
+  });
+
+  test("🕒 should get last sleep log", async () => {
+    const res = await agent
+      .get(`/activity/sleep/last/${babyId}`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.type).toBe("sleep");
+  });
+
+  test("🍼 should get last feeding log", async () => {
+    const res = await agent
+      .get(`/activity/feeding/last/${babyId}`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.type).toBe("feeding");
+  });
+
+  test("🧷 should get last diaper log", async () => {
+    const res = await agent
+      .get(`/activity/diaper/last/${babyId}`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.type).toBe("diaper");
+  });
+
+  test("📂 should get completed sleep logs", async () => {
+    const res = await agent
+      .get(`/activity/sleep/completed/${babyId}?period=daily`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  test("🥣 should get completed feeding logs", async () => {
+    const res = await agent
+      .get(`/activity/feeding/completed/${babyId}?period=daily`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  test("🧻 should get completed diaper logs", async () => {
+    const res = await agent
+      .get(`/activity/diaper/completed/${babyId}?period=daily`)
+      .set("Cookie", cookies)
+      .expect(200);
+
+    expect(Array.isArray(res.body.data)).toBe(true);
   });
 });

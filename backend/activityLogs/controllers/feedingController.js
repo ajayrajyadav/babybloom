@@ -1,9 +1,11 @@
 const mongoose = require("mongoose");
 const FeedingLog = require("../models/FeedingLog");
+// const ActivityLog = require("../models/ActivityLog");
 
 // Create a new feeding log
 exports.createFeedingLog = async (req, res) => {
   try {
+    console.log("📥 Incoming Feeding Log Body:", req.body);
     const { babyId, startTime, endTime, amount, method, notes } = req.body;
 
     const newLog = new FeedingLog({
@@ -106,5 +108,61 @@ exports.getTotalFeedingTime = async (req, res) => {
       success: false,
       message: "Error calculating total feeding time.",
     });
+  }
+};
+
+exports.getLastFeedingLog = async (req, res) => {
+  try {
+    const { babyId } = req.params;
+    const lastLog = await FeedingLog.findOne({
+      babyId,
+      type: 'feeding',
+      // status: 'completed'
+    }).sort({ endTime: -1 });
+
+    if (!lastLog) {
+      return res.status(404).json({ success: false, message: 'No feeding logs found.' });
+    }
+
+    res.status(200).json({ success: true, data: lastLog });
+  } catch (error) {
+    console.error('Error fetching last feeding log:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+ 
+exports.getCompletedFeedingLogs = async (req, res) => {
+  try {
+    const { babyId } = req.params;
+    const { period = 'daily' } = req.query;
+
+    const now = new Date();
+    let start = new Date(now);
+
+    if (period === 'weekly') start.setDate(now.getDate() - 7);
+    else if (period === 'monthly') start.setMonth(now.getMonth() - 1);
+    else start.setHours(0, 0, 0, 0);
+
+    const logs = await FeedingLog.find({
+      babyId,
+      type: 'feeding',
+      time: { $gte: start, $lte: now }
+    }).sort({ time: -1 });
+
+    res.status(200).json({ success: true, data: logs });
+  } catch (error) {
+    console.error('Error fetching completed feeding logs:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.getFeedingMethods = (req, res) => {
+  try {
+    // Pull from enum in the FeedingLog schema
+    const methods = require("../models/FeedingLog").schema.path("method").enumValues;
+    res.status(200).json({ success: true, data: methods });
+  } catch (error) {
+    console.error("Error fetching feeding methods:", error);
+    res.status(500).json({ success: false, message: "Server error retrieving feeding methods." });
   }
 };

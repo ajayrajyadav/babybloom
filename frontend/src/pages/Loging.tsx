@@ -52,6 +52,7 @@ return (
         <form onSubmit={handleLogin} className="space-y-4">
         <input
             type="email"
+            name="email"
             placeholder="Email"
             className="w-full border border-pink-300 p-2 rounded-xl"
             value={email}
@@ -59,6 +60,7 @@ return (
         />
         <input
             type="password"
+            name="password"
             placeholder="Password"
             className="w-full border border-pink-300 p-2 rounded-xl"
             value={password}
