@@ -47,3 +47,9 @@ export function getUserTimezone(): string {
   export function isValidDateString(dateString: string): boolean {
     return !isNaN(new Date(dateString).getTime());
   }
+
+  export const toLocalDatetimeInputValue = (date: Date): string => {
+    const offset = date.getTimezoneOffset();
+    const localTime = new Date(date.getTime() - offset * 60 * 1000);
+    return localTime.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
+  };

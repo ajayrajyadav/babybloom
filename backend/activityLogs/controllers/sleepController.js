@@ -3,37 +3,78 @@ const ActivityLog = require('../models/ActivityLog');
 // Create a new sleep log
 exports.createSleepLog = async (req, res) => {
   try {
-    const { babyId, startTime, notes } = req.body;
+    const { babyId, startTime, endTime, duration, notes } = req.body;
+
     if (!babyId || !startTime) {
-      return res.status(400).json({ success: false, message: 'babyId and startTime are required.' });
+      return res.status(400).json({
+        success: false,
+        message: 'babyId and startTime are required.',
+      });
     }
 
-    const existingLog = await ActivityLog.findOne({ babyId, type: 'sleep', endTime: { $exists: false } });
+    // Check for existing incomplete sleep log
+    const existingLog = await ActivityLog.findOne({
+      babyId,
+      type: 'sleep',
+      endTime: { $exists: false },
+    });
+
     if (existingLog) {
       return res.status(200).json({
         success: true,
         warning: 'There is an existing incomplete sleep log for this baby.',
-        incompleteLog: existingLog
+        incompleteLog: existingLog,
       });
     }
 
-    const newLog = new ActivityLog({
+    const log = new ActivityLog({
       babyId,
       type: 'sleep',
       startTime,
       notes,
-      status: 'open'
+      status: 'open',
     });
 
-    await newLog.save();
+    // If endTime is provided directly, use it
+    if (endTime) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+
+      if (end <= start) {
+        return res.status(400).json({
+          success: false,
+          message: 'endTime must be after startTime.',
+        });
+      }
+
+      log.endTime = endTime;
+      log.duration = Math.floor((end - start) / 1000);
+      log.status = 'completed';
+    }
+
+    // If duration is provided instead of endTime
+    if (!endTime && duration && duration > 0) {
+      const start = new Date(startTime);
+      const calculatedEnd = new Date(start.getTime() + duration * 1000);
+
+      log.endTime = calculatedEnd.toISOString();
+      log.duration = duration;
+      log.status = 'completed';
+    }
+
+    await log.save();
+
     return res.status(201).json({
       success: true,
-      data: newLog,
-      message: 'Sleep log created successfully.'
+      data: log,
+      message: 'Sleep log created successfully.',
     });
   } catch (error) {
     console.error('Error creating sleep log:', error);
-    return res.status(500).json({ success: false, message: 'Server error while creating sleep log.' });
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while creating sleep log.',
+    });
   }
 };
 

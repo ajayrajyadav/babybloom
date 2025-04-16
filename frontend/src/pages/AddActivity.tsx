@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { getUserTimezone } from "../utils/timeUtils";
+import { getUserTimezone, toLocalDatetimeInputValue } from "../utils/timeUtils";
+
 
 export default function AddActivity() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const type = searchParams.get("type"); // 'diaper', 'sleep', 'feeding'
   const babyId = searchParams.get("babyId");
+  const [feedingMethods, setFeedingMethods] = useState<string[]>([]);
 
   const [form, setForm] = useState<any>({
-    time: new Date().toISOString().slice(0, 16),
-    startTime: new Date().toISOString().slice(0, 16),
+    time: toLocalDatetimeInputValue(new Date()),
+    startTime: toLocalDatetimeInputValue(new Date()),
     endTime: "",
     durationHours: "",
     durationMinutes: "",
@@ -29,29 +31,46 @@ export default function AddActivity() {
     } else {
       const timezone = getUserTimezone();
       console.log("🕒 User's timezone is:", timezone);
+  
+      // 🆕 Fetch feeding methods from the backend
+      if (type === "feeding") {
+        fetch("/api/activity/feeding/methods", { credentials: "include" })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              setFeedingMethods(data.data); // 🧠 make sure you have setFeedingMethods state
+            } else {
+              console.warn("⚠️ Failed to fetch feeding methods:", data.message);
+            }
+          })
+          .catch((err) => {
+            console.error("🔥 Error fetching feeding methods:", err);
+          });
+      }
     }
   }, [type, babyId]);
-
+  
   useEffect(() => {
     const fetchIncomplete = async () => {
       if (type === "sleep" || type === "feeding") {
         const res = await fetch(`/api/activity/${type}/incomplete/${babyId}`, {
           credentials: "include",
         });
-
+  
         if (res.ok) {
           const data = await res.json();
+          console.log("Incomplete sleep log response:", data);
           const log = data?.data || data?.incompleteLog;
           if (log?._id) {
             setIncompleteLogId(log._id);
             setIncompleteStartTime(log.startTime?.slice(0, 16) || null);
             setForm((prev: any) => ({
               ...prev,
-              startTime: log.startTime?.slice(0, 16) || prev.startTime,
+              startTime: toLocalDatetimeInputValue(new Date(log.startTime || prev.startTime)),
               notes: log.notes || "",
               amount: log.amount || "",
               method: log.method || "",
-              endTime: "",
+              endTime: "", // reset
               durationHours: "",
               durationMinutes: "",
             }));
@@ -62,7 +81,9 @@ export default function AddActivity() {
     fetchIncomplete();
   }, [type, babyId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -92,23 +113,25 @@ export default function AddActivity() {
   
       const isDurationValid =
         (!useEndTime && (durationHours > 0 || durationMinutes > 0)) &&
-        (durationHours >= 0 && durationHours <= 12) &&
-        (durationMinutes >= 0 && durationMinutes <= 59);
+        durationHours >= 0 && durationHours <= 12 &&
+        durationMinutes >= 0 && durationMinutes <= 59;
   
-      if (!useEndTime && isDurationValid) {
-        const durationMs = totalMinutes * 60 * 1000;
-        const calculatedEnd = new Date(start.getTime() + durationMs);
+      let finalEndTime: Date | null = null;
   
-        payload.endTime = calculatedEnd.toISOString();
-        payload.duration = Math.floor(durationMs / 1000);
+      if (isDurationValid) {
+        const durationSeconds = totalMinutes * 60;
+        finalEndTime = new Date(start.getTime() + durationSeconds * 1000);
+        payload.endTime = finalEndTime.toISOString();
+        payload.duration = durationSeconds;
       } else if (useEndTime && form.endTime && form.endTime.trim() !== "") {
-        const end = new Date(form.endTime);
-        if (end <= start) {
+        finalEndTime = new Date(form.endTime);
+        if (finalEndTime <= start) {
           alert("❌ End time must be after start time.");
           return;
         }
-        payload.endTime = end.toISOString();
-      } else {
+        payload.endTime = finalEndTime.toISOString();
+      } else if (incompleteLogId) {
+        // Only alert if we're updating an incomplete log
         alert("❌ Please provide either a valid end time or duration.");
         return;
       }
@@ -280,13 +303,20 @@ export default function AddActivity() {
               className="w-full p-2 rounded-xl border border-pink-300"
               type="number"
             />
-            <input
+
+            <select
               name="method"
-              placeholder="Method (e.g. bottle, breast)"
               value={form.method || ""}
               onChange={handleChange}
               className="w-full p-2 rounded-xl border border-pink-300"
-            />
+            >
+              <option value="">Select method</option>
+              {feedingMethods.map((method) => (
+                <option key={method} value={method}>
+                  {method.charAt(0).toUpperCase() + method.slice(1)}
+                </option>
+              ))}
+            </select>
           </>
         )}
 

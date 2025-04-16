@@ -155,3 +155,14 @@ exports.getCompletedFeedingLogs = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+exports.getFeedingMethods = (req, res) => {
+  try {
+    // Pull from enum in the FeedingLog schema
+    const methods = require("../models/FeedingLog").schema.path("method").enumValues;
+    res.status(200).json({ success: true, data: methods });
+  } catch (error) {
+    console.error("Error fetching feeding methods:", error);
+    res.status(500).json({ success: false, message: "Server error retrieving feeding methods." });
+  }
+};
