@@ -14,6 +14,12 @@ http {
 
         client_max_body_size 50M;
 
+        # Enable CORS
+        #add_header 'Access-Control-Allow-Origin' 'http://localhost:5173' always;
+        #add_header 'Access-Control-Allow-Credentials' 'true' always;
+        #add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+        #add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
+
         # Route user registration & login
         location /api/users/register {
             proxy_pass http://localhost:5001/users/register;
@@ -31,6 +37,7 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
+        # Forward other user-related API calls
         location /api/users/ {
             proxy_pass http://localhost:5001/users/;
             proxy_set_header Host $host;
@@ -49,15 +56,6 @@ http {
 
         location /api/activity/ {
             proxy_pass http://localhost:5004;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-
-        # Optional: Route frontend (useful in dev)
-        location / {
-            proxy_pass http://localhost:5173;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

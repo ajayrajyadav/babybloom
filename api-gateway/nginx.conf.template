@@ -14,15 +14,9 @@ http {
 
         client_max_body_size 50M;
 
-        # Enable CORS
-        #add_header 'Access-Control-Allow-Origin' 'http://localhost:5173' always;
-        #add_header 'Access-Control-Allow-Credentials' 'true' always;
-        #add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
-        #add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
-
         # Route user registration & login
         location /api/users/register {
-            proxy_pass http://localhost:5001/users/register;
+            proxy_pass http://${USERS_HOST}:${USERS_PORT}/users/register;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -30,16 +24,15 @@ http {
         }
 
         location /api/users/login {
-            proxy_pass http://localhost:5001/users/login;
+            proxy_pass http://${USERS_HOST}:${USERS_PORT}/users/login;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Forward other user-related API calls
         location /api/users/ {
-            proxy_pass http://localhost:5001/users/;
+            proxy_pass http://${USERS_HOST}:${USERS_PORT}/users/;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -47,7 +40,7 @@ http {
         }
 
         location /api/babies {
-            proxy_pass http://localhost:5002;
+            proxy_pass http://${BABIES_HOST}:${BABIES_PORT};
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -55,7 +48,16 @@ http {
         }
 
         location /api/activity/ {
-            proxy_pass http://localhost:5004;
+            proxy_pass http://${ACTIVITY_LOGS_HOST}:${ACTIVITY_LOGS_PORT};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Optional: Route frontend (useful in dev)
+        location / {
+            proxy_pass http://${FRONTEND_HOST}:${FRONTEND_PORT};
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

@@ -1,20 +1,42 @@
 #!/bin/bash
 
-# Load environment variables from .env file
-export $(grep -v '^#' .env | xargs)
+# Detect environment mode
+ENV_MODE="${1:-local}"
 
-# Use JWT_SECRET as AUTH_TOKEN for Nginx
-export AUTH_TOKEN=$JWT_SECRET
-
-# Ensure envsubst is installed
-if ! command -v envsubst &> /dev/null
-then
-    echo "Error: envsubst not found. Install with 'brew install gettext' and 'brew link --force gettext'"
-    exit 1
+if [ "$ENV_MODE" == "docker" ]; then
+  ENV_FILE=".env.docker"
+else
+  ENV_FILE=".env.local"
 fi
 
-# Replace placeholders in nginx.conf.template and generate nginx.conf
-envsubst '$AUTH_TOKEN' < nginx.conf.template > nginx.conf
+# Absolute path resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_PATH="$SCRIPT_DIR/$ENV_FILE"
+NGINX_TEMPLATE="$SCRIPT_DIR/nginx.conf.template"
+NGINX_OUTPUT="$SCRIPT_DIR/nginx.conf"
 
-# Start Nginx with the updated configuration
-nginx -c $(pwd)/nginx.conf
+# Verify file exists
+if [ ! -f "$ENV_PATH" ]; then
+  echo "❌ Error: $ENV_PATH does not exist."
+  exit 1
+fi
+
+echo "📦 Using environment file: $ENV_PATH"
+
+# Load environment variables
+export $(grep -v '^#' "$ENV_PATH" | xargs)
+
+# Set AUTH_TOKEN for template
+export AUTH_TOKEN=$JWT_SECRET
+
+# Check for envsubst
+if ! command -v envsubst &> /dev/null; then
+  echo "❌ Error: envsubst not found. Run 'brew install gettext && brew link --force gettext'"
+  exit 1
+fi
+
+# Render the template
+envsubst '${USERS_HOST} ${USERS_PORT} ${BABIES_HOST} ${BABIES_PORT} ${ACTIVITY_LOGS_HOST} ${ACTIVITY_LOGS_PORT} ${FRONTEND_HOST} ${FRONTEND_PORT} ${AUTH_TOKEN}' < "$NGINX_TEMPLATE" > "$NGINX_OUTPUT"
+
+echo "⚙️  Starting Nginx with $NGINX_OUTPUT"
+nginx -c "$NGINX_OUTPUT"

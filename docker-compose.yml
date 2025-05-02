@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:6.0 # Compatible with Apple Silicon
+  mongo:
+    image: mongo:6.0
     container_name: babybloom-mongo
     restart: always
     ports:
@@ -10,10 +10,70 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: babybloom
     volumes:
       - mongodb_data:/data/db
 
+  users:
+    build:
+      context: ./backend/users
+    container_name: users
+    restart: always
+    env_file:
+      - ./backend/users/.env
+    ports:
+      - "5001:5001"
+    depends_on:
+      - mongo
+
+  babies:
+    build:
+      context: ./backend/babies
+    container_name: babies
+    restart: always
+    env_file:
+      - ./backend/babies/.env
+    ports:
+      - "5002:5002"
+    depends_on:
+      - mongo
+
+  activity-logs:
+    build:
+      context: ./backend/activityLogs
+    container_name: activity-logs
+    restart: always
+    env_file:
+      - ./backend/activityLogs/.env
+    ports:
+      - "5004:5004"
+    depends_on:
+      - mongo
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    restart: always
+    env_file:
+      - ./api-gateway/.env.docker
+    ports:
+      - "8080:8080"
+    depends_on:
+      - users
+      - babies
+      - activity-logs
+
+  frontend:
+    image: node:22-alpine
+    container_name: frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - api-gateway
+
 volumes:
   mongodb_data:
-    driver: local

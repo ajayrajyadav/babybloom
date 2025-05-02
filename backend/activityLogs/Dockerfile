@@ -1,12 +1,19 @@
-FROM node:22-alpine
+FROM node:23-slim
 
-WORKDIR /app
+# Set working directory
+WORKDIR /usr/src/app
 
+# Copy package files
 COPY package*.json ./
-RUN npm ci --omit=dev
 
+# Install dependencies
+RUN npm install
+
+# Copy the app source
 COPY . .
 
-EXPOSE 3003
+# Expose internal port
+EXPOSE 5004
 
-CMD ["node", "index.js"]
+# Start the app
+CMD ["npm", "start"]
